@@ -110,4 +110,4 @@ venv.bak/
 # directory data and trash
 
 __trash__/
-data/
+data/raw
