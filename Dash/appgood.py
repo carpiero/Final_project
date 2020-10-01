@@ -11,7 +11,9 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 # Multi-dropdown options
-from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
+from controls import  WELL_STATUSES, WELL_TYPES, WELL_COLORS, MUNICIPIOS, PDC,df_final_pob_melt
+
+df=df_final_pob_melt
 
 # get relative data folder
 # PATH = pathlib.Path(__file__).parent
@@ -23,18 +25,25 @@ app = dash.Dash(
 server = app.server
 
 # Create controls
-county_options = [
-    {"label": str(COUNTIES[county]), "value": str(county)} for county in COUNTIES
-]
 
 well_status_options = [
-    {"label": str(WELL_STATUSES[well_status]), "value": str(well_status)}
+    {"label": WELL_STATUSES[well_status], "value": well_status}
     for well_status in WELL_STATUSES
 ]
 
 well_type_options = [
     {"label": str(WELL_TYPES[well_type]), "value": str(well_type)}
     for well_type in WELL_TYPES
+]
+
+mun_type_options = [
+    {"label": str(MUNICIPIOS[x]), "value": str(x)}
+    for x in MUNICIPIOS
+]
+
+pdc_type_options = [
+    {"label": str(PDC[x]), "value": str(x)}
+    for x in PDC
 ]
 
 
@@ -73,7 +82,7 @@ layout = dict(
 # Create app layout
 app.layout = html.Div(
     [
-        dcc.Store(id="aggregate_data"),
+        # dcc.Store(id="aggregate_data"),
         # empty Div to trigger javascript file for graph resizing
         html.Div(id="output-clientside"),
         html.Div(
@@ -97,7 +106,7 @@ app.layout = html.Div(
                         html.Div(
                             [
                                 html.H3(
-                                    "Ayuntamientos Españoles",
+                                    "Municipios",
                                     style={"margin-bottom": "10px"},
                                 ),
                                 html.H5(
@@ -128,59 +137,34 @@ app.layout = html.Div(
             [
                 html.Div(
                     [
-                        html.P(
-                            "Filter by construction date (or select range in histogram):",
-                            className="control_label",
-                        ),
-                        dcc.RangeSlider(
-                            id="year_slider",
-                            min=1960,
-                            max=2017,
-                            value=[1990, 2010],
-                            className="dcc_control",
-                        ),
-                        html.P("Filter by well status:", className="control_label"),
-                        dcc.RadioItems(
-                            id="well_status_selector",
-                            options=[
-                                {"label": "All ", "value": "all"},
-                                {"label": "Active only ", "value": "active"},
-                                {"label": "Customize ", "value": "custom"},
-                            ],
-                            value="active",
-                            labelStyle={"display": "inline-block"},
-                            className="dcc_control",
-                        ),
-                        dcc.Dropdown(
+
+                        html.P("Comunidad Autónoma", className="control_label"),
+                           dcc.Dropdown(
                             id="well_statuses",
                             options=well_status_options,
-                            multi=True,
-                            value=list(WELL_STATUSES.keys()),
+                            value=list(WELL_STATUSES.keys())[0],
                             className="dcc_control",
                         ),
-                        dcc.Checklist(
-                            id="lock_selector",
-                            options=[{"label": "Lock camera", "value": "locked"}],
-                            className="dcc_control",
-                            value=[],
-                        ),
-                        html.P("Filter by well type:", className="control_label"),
-                        dcc.RadioItems(
-                            id="well_type_selector",
-                            options=[
-                                {"label": "All ", "value": "all"},
-                                {"label": "Productive only ", "value": "productive"},
-                                {"label": "Customize ", "value": "custom"},
-                            ],
-                            value="productive",
-                            labelStyle={"display": "inline-block"},
-                            className="dcc_control",
-                        ),
+
+                        html.P("Provincia", className="control_label"),
                         dcc.Dropdown(
                             id="well_types",
-                            options=well_type_options,
-                            multi=True,
-                            value=list(WELL_TYPES.keys()),
+                            # options=well_type_options,
+                            # value=list(WELL_TYPES.keys()),
+                            className="dcc_control",
+                        ),
+                        html.P("Municipio", className="control_label"),
+                        dcc.Dropdown(
+                            id="municipio_types",
+                            options=mun_type_options,
+                            value=list(MUNICIPIOS.keys()),
+                            className="dcc_control",
+                        ),
+                        html.P("Partida de Coste", className="control_label"),
+                        dcc.Dropdown(
+                            id="partida_de_coste_types",
+                            options=pdc_type_options,
+                            value=list(PDC.keys()),
                             className="dcc_control",
                         ),
                     ],
@@ -192,23 +176,23 @@ app.layout = html.Div(
                         html.Div(
                             [
                                 html.Div(
-                                    [html.H6(id="well_text"), html.P("No. of Wells")],
-                                    id="wells",
+                                    [html.H6(id="Población_text"), html.P('Población')],
+                                    id="Población",
                                     className="mini_container",
                                 ),
                                 html.Div(
-                                    [html.H6(id="gasText"), html.P("Gas")],
-                                    id="gas",
+                                    [html.H6(id="Coste efectivo Total_text"), html.P("Coste efectivo Total")],
+                                    id="Coste efectivo Total",
                                     className="mini_container",
                                 ),
                                 html.Div(
-                                    [html.H6(id="oilText"), html.P("Oil")],
-                                    id="oil",
+                                    [html.H6(id='Coste efectivo por Habitante_text'), html.P("Coste efectivo por Habitante")],
+                                    id="Coste efectivo por Habitante",
                                     className="mini_container",
                                 ),
                                 html.Div(
-                                    [html.H6(id="waterText"), html.P("Water")],
-                                    id="water",
+                                    [html.H6(id="Coste efectivo Medio por Habitante_text"), html.P("Coste efectivo Medio por Habitante")],
+                                    id="Coste efectivo Medio por Habitante",
                                     className="mini_container",
                                 ),
                             ],
@@ -257,6 +241,36 @@ app.layout = html.Div(
     id="mainContainer",
     style={"display": "flex", "flex-direction": "column"},
 )
+
+# def filter_dataframe(df, well_statuses, well_types, municipio_types, partida_de_coste_types):
+#     dff = df[df["CCAA"].isin(well_statuses)
+#         & df['Provincia'].isin(well_types)
+#         & df['Nombre Ente Principal'].isin(municipio_types)
+#         & df['Descripción'].isin(partida_de_coste_types)
+#     ]
+#     return dff
+
+
+
+# Create callbacks
+# app.clientside_callback(
+#     ClientsideFunction(namespace="clientside", function_name="resize"),
+#     Output("output-clientside", "children"),
+#     [Input("count_graph", "figure")],
+# )
+
+
+@app.callback(
+    [Output("well_types", "value"),Output("well_types", "options")], [Input("well_statuses", "value")]
+)
+def display_status(well_statuses):
+
+    value=well_statuses
+    options=[{"label": str(well_statuses), "value": str(well_statuses)}]
+
+
+    return (value,options)
+
 
 
 
