@@ -4,19 +4,24 @@ df_indicadores = pd.read_parquet(f'../data/processed/df_indicadores.parquet')
 df_final_pob = pd.read_parquet('../data/processed/df_final_pob.parquet')
 df_final_pob_melt = pd.read_parquet('../data/processed/df_final_pob_melt.parquet')
 
-CCAA=df_final_pob['CCAA'].unique().to_list()
-prov=df_final_pob['Provincia'].unique().to_list()
-mun=df_final_pob['Nombre Ente Principal'].unique().to_list()
-pdc=list(df_final_pob_melt['Descripción'].unique())
+CCAA=sorted(df_final_pob['CCAA'].unique().to_list())
+CCAA.insert(0, 'TODAS')
+CCAA_dict = dict(zip(CCAA, CCAA))
 
+prov=sorted(df_final_pob['Provincia'].unique().to_list())
+prov.insert(0, 'TODAS')
+PROV = dict(zip(prov, prov))
 
-WELL_STATUSES = dict(zip(CCAA, CCAA))
-
-WELL_TYPES = dict(zip(prov, prov))
-
+mun=sorted(df_final_pob['Nombre Ente Principal'].unique().to_list())
+mun.insert(0, 'TODOS')
 MUNICIPIOS = dict(zip(mun, mun))
 
+pdc=sorted(list(df_final_pob_melt['Descripción'].unique()))
+pdc.insert(0, 'TODOS')
 PDC = dict(zip(pdc, pdc))
+
+
+
 
 
 WELL_COLORS = dict(
