@@ -1,5 +1,9 @@
 # Import required libraries
 import pickle
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import plotly.express as px
 import re
 import locale
 import copy
@@ -13,7 +17,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 # Multi-dropdown options
-from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores, WELL_COLORS
+from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores, df_final_pob_melt_PC, WELL_COLORS
 
 # df=df_final_pob_melt
 
@@ -377,7 +381,7 @@ def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
 
 
 
-    value=locale.format_string('%.0f', value, True)
+    value=locale.format_string('%.0f', round(value,0), True)
 
     return f'{value} Euros'
 
@@ -392,7 +396,7 @@ def update_text(Población_text, Coste_efectivo_Total_text):
     cost=int(''.join(re.findall(r'\d' , Coste_efectivo_Total_text)))
 
     value= cost/pob
-    value = locale.format_string('%.0f' , value , True)
+    value = locale.format_string('%.0f' , round(value,0) , True)
 
     return f'{value} Euros/Hab.'
 
@@ -447,39 +451,42 @@ def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
         else:
             cohorte =df_final_pob_melt.loc[df_final_pob_melt['Nombre Ente Principal'] == municipio_types , 'cohorte_pob'] \
                 .unique().to_list()[0]
-            value = df_final_pob_melt.loc[(df_final_pob_melt['cohorte_pob'] == cohorte) & (df_final_pob_melt['Descripción'] == partida_de_coste_types), 'coste_efectivo'].sum() \
-                    / df_final_pob.loc[df_final_pob['cohorte_pob'] == cohorte , 'Población 2018'].sum()
+            value = np.median(df_final_pob_melt_PC.loc[(df_final_pob_melt_PC['cohorte_pob'] == cohorte) & \
+                    (df_final_pob_melt_PC['Descripción'] == f'PC_{partida_de_coste_types}') & (df_final_pob_melt_PC['coste_efectivo_PC'] > 0) , 'coste_efectivo_PC'])
 
-    value=locale.format_string('%.0f', value, True)
+            # value=df_final_pob_melt.loc[(df_final_pob_melt['cohorte_pob'] == cohorte) & (df_final_pob_melt['Descripción'] == partida_de_coste_types), 'coste_efectivo'].sum() \
+            #                     / df_final_pob.loc[df_final_pob['cohorte_pob'] == cohorte , 'Población 2018'].sum()
+
+    value=locale.format_string('%.0f', round(value,0), True)
 
     return f'{value} Euros/Hab.'
 
+@app.callback(
+    Output("main_graph", "figure"),
+    [
+        Input("CCAA_types" , "value") , Input("PROV_types" , "value") , Input("municipio_types" , "value") ,
+        Input("partida_de_coste_types" , "value")
+    ],[State("main_graph", "relayoutData")]
+    # [State("lock_selector", "value"), State("main_graph", "relayoutData")],
+)
+def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_types,main_graph_layout):
+    graph = df_final_pob_melt.loc[(df_final_pob_melt['Nombre Ente Principal'] == municipio_types)]
+    fig = px.bar(graph,x='Descripción', y='coste_efectivo',template='seaborn',title='sdsds',barmode='stack', orientation='v')
 
+    # relayoutData is None by default, and {'autosize': True} without relayout action
+    # if main_graph_layout is not None :
+    #     if "mapbox.center" in main_graph_layout.keys():
+    #         lon = float(main_graph_layout["mapbox.center"]["lon"])
+    #         lat = float(main_graph_layout["mapbox.center"]["lat"])
+    #         zoom = float(main_graph_layout["mapbox.zoom"])
+    #         layout["mapbox"]["center"]["lon"] = lon
+    #         layout["mapbox"]["center"]["lat"] = lat
+    #         layout["mapbox"]["zoom"] = zoom
 
+    # figure = dict(data=traces, layout=layout)
 
+    return fig
 
-
-
-
-  # Output("Coste efectivo Total_text", "children"),
-                # Output("Coste efectivo por Habitante_text", "children"),
-                # Output("Coste efectivo Medio por Habitante_text", "children")
-
-
-
-
-
-
-# @app.callback(
-#     [
-#         Output("gasText", "children"),
-#         Output("oilText", "children"),
-#         Output("waterText", "children"),
-#     ],
-#     [Input("aggregate_data", "data")],
-# )
-# def update_text(data):
-#     return data[0] + " mcf", data[1] + " bbl", data[2] + " bbl"
 
 
 
