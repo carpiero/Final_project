@@ -210,7 +210,7 @@ app.layout = html.Div(
             [
                 html.Div(
                     [dcc.Graph(id="main_graph")],
-                    className="pretty_container seven columns",
+                    className="pretty_container seven columns", style={'width': '49%', 'padding': '0px 20px 20px 20px'}
                 ),
                 html.Div(
                     [dcc.Graph(id="individual_graph")],
