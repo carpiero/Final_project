@@ -9,9 +9,14 @@ import pandas as pd
 from dash.dependencies import Input, Output, State, ClientsideFunction
 import dash_core_components as dcc
 import dash_html_components as html
+import numpy as np
+import plotly.express as px
+import re
+import locale
 
 # Multi-dropdown options
 from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
+from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores, df_final_pob_melt_PC
 
 # get relative data folder
 PATH = pathlib.Path(__file__).parent
@@ -23,6 +28,18 @@ app = dash.Dash(
 server = app.server
 
 # Create controls
+
+CCAA_options = [ {"label": CCAA_dict[x], "value": x}for x in CCAA_dict]
+
+PROV_type_options = [ {"label": PROV[x], "value":x}for x in PROV ]
+
+mun_type_options = [{"label": MUNICIPIOS[x], "value": x}for x in MUNICIPIOS]
+
+pdc_type_options = [{"label": PDC[x], "value": x} for x in PDC ]
+
+locale.setlocale(locale.LC_ALL, '')
+
+#####################################################3
 county_options = [
     {"label": str(COUNTIES[county]), "value": str(county)} for county in COUNTIES
 ]
@@ -97,11 +114,11 @@ app.layout = html.Div(
                         html.Div(
                             [
                                 html.H3(
-                                    "New York Oil and Gas",
-                                    style={"margin-bottom": "0px"},
+                                    "Municipios",
+                                    style={"margin-bottom": "2px"},
                                 ),
                                 html.H5(
-                                    "Production Overview", style={"margin-top": "0px"}
+                                    "Coste efectivo", style={"margin-top": "0px"}
                                 ),
                             ]
                         )
@@ -109,80 +126,56 @@ app.layout = html.Div(
                     className="one-half column",
                     id="title",
                 ),
-                html.Div(
-                    [
-                        html.A(
-                            html.Button("Learn More", id="learn-more-button"),
-                            href="https://plot.ly/dash/pricing/",
-                        )
-                    ],
-                    className="one-third column",
-                    id="button",
-                ),
+        #         html.Div(
+        #             [
+        #                 html.A(
+        #                     html.Button("Learn More", id="learn-more-button"),
+        #                     href="https://plot.ly/dash/pricing/",
+        #                 )
+        #             ],
+        #             className="one-third column",
+        #             id="button",
+        #         ),
             ],
             id="header",
             className="row flex-display",
-            style={"margin-bottom": "25px"},
+            style={"margin-bottom": "2px"},
         ),
         html.Div(
             [
                 html.Div(
                     [
                         html.P(
-                            "Filter by construction date (or select range in histogram):",
+                            "Comunidad Autónoma",
                             className="control_label",
                         ),
-                        dcc.RangeSlider(
-                            id="year_slider",
-                            min=1960,
-                            max=2017,
-                            value=[1990, 2010],
-                            className="dcc_control",
-                        ),
-                        html.P("Filter by well status:", className="control_label"),
-                        dcc.RadioItems(
-                            id="well_status_selector",
-                            options=[
-                                {"label": "All ", "value": "all"},
-                                {"label": "Active only ", "value": "active"},
-                                {"label": "Customize ", "value": "custom"},
-                            ],
-                            value="active",
-                            labelStyle={"display": "inline-block"},
-                            className="dcc_control",
-                        ),
                         dcc.Dropdown(
-                            id="well_statuses",
-                            options=well_status_options,
-                            multi=True,
-                            value=list(WELL_STATUSES.keys()),
-                            className="dcc_control",
-                        ),
-                        dcc.Checklist(
-                            id="lock_selector",
-                            options=[{"label": "Lock camera", "value": "locked"}],
-                            className="dcc_control",
-                            value=[],
-                        ),
-                        html.P("Filter by well type:", className="control_label"),
-                        dcc.RadioItems(
-                            id="well_type_selector",
-                            options=[
-                                {"label": "All ", "value": "all"},
-                                {"label": "Productive only ", "value": "productive"},
-                                {"label": "Customize ", "value": "custom"},
-                            ],
-                            value="productive",
-                            labelStyle={"display": "inline-block"},
-                            className="dcc_control",
-                        ),
+                            id="CCAA_types" ,
+                            options=CCAA_options ,
+                            value=list(CCAA_dict.keys())[0] ,
+                            className="dcc_control" ,
+                        ) ,
+                        html.P("Provincia", className="control_label"),
                         dcc.Dropdown(
-                            id="well_types",
-                            options=well_type_options,
-                            multi=True,
-                            value=list(WELL_TYPES.keys()),
-                            className="dcc_control",
-                        ),
+                            id="PROV_types" ,
+                            # options=well_type_options,
+                            # value=list(WELL_TYPES.keys()),
+                            className="dcc_control" ,
+                        ) ,
+                         html.P("Municipio", className="control_label"),
+                        dcc.Dropdown(
+                            id="municipio_types" ,
+                            # options=mun_type_options,
+                            # value=list(MUNICIPIOS.keys()),
+                            className="dcc_control" ,
+                        ) ,
+                        html.P("Partida de Coste" , className="control_label") ,
+                        dcc.Dropdown(
+                            id="partida_de_coste_types" ,
+                            # options=pdc_type_options,
+                            # value=list(PDC.keys()),
+                            className="dcc_control" ,
+                        ) ,
                     ],
                     className="pretty_container four columns",
                     id="cross-filter-options",
@@ -192,24 +185,26 @@ app.layout = html.Div(
                         html.Div(
                             [
                                 html.Div(
-                                    [html.H6(id="well_text"), html.P("No. of Wells")],
-                                    id="wells",
-                                    className="mini_container",
-                                ),
+                                    [html.H6(id="Población_text") , html.P('Población')] ,
+                                    id="Población" ,
+                                    className="mini_container" ,
+                                ) ,
                                 html.Div(
-                                    [html.H6(id="gasText"), html.P("Gas")],
-                                    id="gas",
-                                    className="mini_container",
-                                ),
+                                    [html.H6(id="Coste_efectivo_Total_text") , html.P("Coste efectivo Total")] ,
+                                    id="Coste_efectivo_Total" ,
+                                    className="mini_container" ,
+                                ) ,
                                 html.Div(
-                                    [html.H6(id="oilText"), html.P("Oil")],
-                                    id="oil",
-                                    className="mini_container",
-                                ),
+                                    [html.H6(id='Coste_efectivo_por_Habitante_text') ,
+                                     html.P("Coste efectivo por Habitante")] ,
+                                    id="Coste_efectivo_por_Habitante" ,
+                                    className="mini_container" ,
+                                ) ,
                                 html.Div(
-                                    [html.H6(id="waterText"), html.P("Water")],
-                                    id="water",
-                                    className="mini_container",
+                                    [html.H6(id="Coste_efectivo_Medio_por_Habitante_text") ,
+                                     html.P("Coste efectivo Medio por Habitante")] ,
+                                    id="Coste_efectivo_Medio_por_Habitante" ,
+                                    className="mini_container" ,
                                 ),
                             ],
                             id="info-container",
@@ -231,11 +226,11 @@ app.layout = html.Div(
             [
                 html.Div(
                     [dcc.Graph(id="main_graph")],
-                    className="pretty_container seven columns",
+                    className="pretty_container seven columns",style={'width': '40%'}
                 ),
                 html.Div(
                     [dcc.Graph(id="individual_graph")],
-                    className="pretty_container five columns",
+                    className="pretty_container five columns",style={'width': '60%'}
                 ),
             ],
             className="row flex-display",
@@ -258,213 +253,456 @@ app.layout = html.Div(
     style={"display": "flex", "flex-direction": "column"},
 )
 
+####################################################
+
+@app.callback(
+    [Output("PROV_types", "value"),Output("PROV_types", "options")], [Input("CCAA_types", "value")]
+)
+def display_status(CCAA_types):
+    if CCAA_types == 'TODAS':
+        value = list(PROV.keys())[0]
+        options = PROV_type_options
+    else:
+        prov_def=sorted(df_final_pob_melt.loc[df_final_pob_melt['CCAA']==CCAA_types,'Provincia'].unique().to_list())
+        prov_def.insert(0, 'TODAS')
+        PROV_def = dict(zip(prov_def, prov_def))
+        options = [ {"label": PROV_def[x], "value":x}for x in PROV_def ]
+        value=list(PROV_def.keys())[0]
+
+    return (value,options)
+
+
+
+@app.callback(
+    [Output("municipio_types", "value"),Output("municipio_types", "options")], [Input("CCAA_types", "value"),Input("PROV_types", "value")]
+)
+def display_status(CCAA_types, PROV_types):
+    if CCAA_types == 'TODAS' and PROV_types == 'TODAS':
+        value = list(MUNICIPIOS.keys())[0]
+        options = mun_type_options
+
+    elif CCAA_types != 'TODAS' and PROV_types == 'TODAS':
+        mun_def = sorted(df_final_pob_melt.loc[df_final_pob_melt['CCAA'] == CCAA_types ,'Nombre Ente Principal'].unique().to_list())
+        mun_def.insert(0 , 'TODOS')
+        MUN_def = dict(zip(mun_def , mun_def))
+        options = [{"label": MUN_def[x] , "value": x} for x in MUN_def]
+        value = list(MUN_def.keys())[0]
+
+    else:
+        mun_def =sorted(df_final_pob_melt.loc[df_final_pob_melt['Provincia']==PROV_types,'Nombre Ente Principal'].unique().to_list())
+        mun_def.insert(0, 'TODOS')
+        MUN_def = dict(zip(mun_def, mun_def))
+        options = [ {"label": MUN_def[x], "value":x}for x in MUN_def ]
+        value=list(MUN_def.keys())[0]
+
+    return (value,options)
+
+
+@app.callback(
+    [Output("partida_de_coste_types", "value"),Output("partida_de_coste_types", "options")],
+    [Input("CCAA_types", "value"), Input("PROV_types", "value"), Input("municipio_types", "value") ]
+)
+def display_status(CCAA_types, PROV_types,municipio_types):
+    if  municipio_types != 'TODOS':
+        pdc_def = sorted(list(df_final_pob_melt\
+        .loc[(df_final_pob_melt['Nombre Ente Principal'] == municipio_types) & (df_final_pob_melt['coste_efectivo']>100)
+        ,'Descripción'].unique()))
+
+        pdc_def.insert(0 , 'TODOS')
+        PDC_def = dict(zip(pdc_def , pdc_def))
+        options = [{"label": PDC_def[x] , "value": x} for x in PDC_def]
+        value = list(PDC_def.keys())[0]
+
+    else:
+        value = list(PDC.keys())[0]
+        options = pdc_type_options
+
+    return (value,options)
+
+@app.callback(Output("Población_text", "children"),
+    [
+        Input("CCAA_types" , "value") , Input("PROV_types" , "value") , Input("municipio_types" , "value")
+
+    ],
+)
+def update_text(CCAA_types, PROV_types,municipio_types ):
+    if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+        value=df_final_pob['Población 2018'].sum()
+
+    elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+        value = df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types,'Población 2018'].sum()
+
+    elif PROV_types != 'TODAS' and municipio_types == 'TODOS':
+        value = df_final_pob.loc[df_final_pob['Provincia']==PROV_types,'Población 2018'].sum()
+
+    else:
+        value=df_final_pob.loc[df_final_pob['Nombre Ente Principal'] == municipio_types,'Población 2018'].sum()
+
+    value=locale.format_string('%.0f', value, True)
+
+    return f'{value} hab.'
+
+
+@app.callback (Output("Coste_efectivo_Total_text", "children"),
+    [
+        Input("CCAA_types" , "value") , Input("PROV_types" , "value") , Input("municipio_types" , "value"),
+        Input("partida_de_coste_types" , "value")
+
+    ],
+)
+
+def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
+    if partida_de_coste_types== 'TODOS':
+
+        if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            value=df_final_pob_melt['coste_efectivo'].sum()
+
+        elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            value = df_final_pob_melt.loc[df_final_pob_melt['CCAA'] == CCAA_types,'coste_efectivo'].sum()
+
+        elif PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            value = df_final_pob_melt.loc[df_final_pob_melt['Provincia']==PROV_types,'coste_efectivo'].sum()
+
+        else:
+            value=df_final_pob_melt.loc[df_final_pob_melt['Nombre Ente Principal'] == municipio_types,'coste_efectivo'].sum()
+
+    else:
+        if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            value=df_final_pob_melt.loc[df_final_pob_melt['Descripción'] == partida_de_coste_types,'coste_efectivo'].sum()
+
+        elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            value = df_final_pob_melt.loc[(df_final_pob_melt['Descripción'] == partida_de_coste_types) &(df_final_pob_melt['CCAA'] == CCAA_types),'coste_efectivo'].sum()
+
+        elif PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            value = df_final_pob_melt.loc[(df_final_pob_melt['Descripción'] == partida_de_coste_types) &(df_final_pob_melt['Provincia']==PROV_types),'coste_efectivo'].sum()
+
+        else:
+            value=df_final_pob_melt.loc[(df_final_pob_melt['Descripción'] == partida_de_coste_types) &(df_final_pob_melt['Nombre Ente Principal'] == municipio_types),'coste_efectivo'].sum()
+
+
+
+    value=locale.format_string('%.0f', round(value,0), True)
+
+    return f'{value} Euros'
+
+@app.callback (Output("Coste_efectivo_por_Habitante_text", "children"),
+    [
+        Input("Población_text", "children") , Input("Coste_efectivo_Total_text", "children")
+
+    ],
+)
+def update_text(Población_text, Coste_efectivo_Total_text):
+    pob=int(''.join(re.findall(r'\d' , Población_text)))
+    cost=int(''.join(re.findall(r'\d' , Coste_efectivo_Total_text)))
+
+    value= cost/pob
+    value = locale.format_string('%.0f' , round(value,0) , True)
+
+    return f'{value} Euros/Hab.'
+
+
+@app.callback (Output("Coste_efectivo_Medio_por_Habitante_text", "children"),
+    [
+        Input("CCAA_types" , "value") , Input("PROV_types" , "value") , Input("municipio_types" , "value") ,
+        Input("partida_de_coste_types" , "value")
+
+    ],
+)
+def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
+    if partida_de_coste_types== 'TODOS':
+
+        if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            value=df_final_pob_melt['coste_efectivo'].sum()/df_final_pob['Población 2018'].sum()
+
+        elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            value = df_final_pob_melt['coste_efectivo'].sum()/df_final_pob['Población 2018'].sum()
+
+        elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            value = df_final_pob_melt.loc[df_final_pob_melt['CCAA'] == CCAA_types,'coste_efectivo'].sum()\
+            / df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types,'Población 2018'].sum()
+
+        elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            value = df_final_pob_melt['coste_efectivo'].sum()/df_final_pob['Población 2018'].sum()
+
+        else:
+            cohorte=df_final_pob_melt.loc[df_final_pob_melt['Nombre Ente Principal'] == municipio_types , 'cohorte_pob']\
+                          .unique().to_list()[0]
+
+            value=df_final_pob_melt.loc[df_final_pob_melt['cohorte_pob'] == cohorte,'coste_efectivo'].sum() \
+                    /df_final_pob.loc[df_final_pob['cohorte_pob'] == cohorte , 'Población 2018'].sum()
+
+    else:
+        if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            value=df_final_pob_melt.loc[df_final_pob_melt['Descripción'] == partida_de_coste_types,'coste_efectivo'].sum()\
+                   /df_final_pob['Población 2018'].sum()
+
+        elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            value = df_final_pob_melt.loc[df_final_pob_melt['Descripción'] == partida_de_coste_types,'coste_efectivo'].sum()\
+                   /df_final_pob['Población 2018'].sum()
+
+        elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+             value = df_final_pob_melt.loc[(df_final_pob_melt['CCAA'] == CCAA_types)&(df_final_pob_melt['Descripción'] == partida_de_coste_types), 'coste_efectivo'].sum() \
+                    / df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types , 'Población 2018'].sum()
+
+        elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            value= df_final_pob_melt.loc[df_final_pob_melt['Descripción'] == partida_de_coste_types , 'coste_efectivo'].sum() \
+            / df_final_pob['Población 2018'].sum()
+
+        else:
+            cohorte =df_final_pob_melt.loc[df_final_pob_melt['Nombre Ente Principal'] == municipio_types , 'cohorte_pob'] \
+                .unique().to_list()[0]
+            value = np.median(df_final_pob_melt_PC.loc[(df_final_pob_melt_PC['cohorte_pob'] == cohorte) & \
+                    (df_final_pob_melt_PC['Descripción'] == f'PC_{partida_de_coste_types}') & (df_final_pob_melt_PC['coste_efectivo_PC'] > 0) , 'coste_efectivo_PC'])
+
+            # value=df_final_pob_melt.loc[(df_final_pob_melt['cohorte_pob'] == cohorte) & (df_final_pob_melt['Descripción'] == partida_de_coste_types), 'coste_efectivo'].sum() \
+            #                     / df_final_pob.loc[df_final_pob['cohorte_pob'] == cohorte , 'Población 2018'].sum()
+
+    value=locale.format_string('%.0f', round(value,0), True)
+
+    return f'{value} Euros/Hab.'
 
 # Helper functions
-def human_format(num):
-    if num == 0:
-        return "0"
-
-    magnitude = int(math.log(num, 1000))
-    mantissa = str(int(num / (1000 ** magnitude)))
-    return mantissa + ["", "K", "M", "G", "T", "P"][magnitude]
-
-
-def filter_dataframe(df, well_statuses, well_types, year_slider):
-    dff = df[
-        df["Well_Status"].isin(well_statuses)
-        & df["Well_Type"].isin(well_types)
-        & (df["Date_Well_Completed"] > dt.datetime(year_slider[0], 1, 1))
-        & (df["Date_Well_Completed"] < dt.datetime(year_slider[1], 1, 1))
-    ]
-    return dff
-
-
-def produce_individual(api_well_num):
-    try:
-        points[api_well_num]
-    except:
-        return None, None, None, None
-
-    index = list(
-        range(min(points[api_well_num].keys()), max(points[api_well_num].keys()) + 1)
-    )
-    gas = []
-    oil = []
-    water = []
-
-    for year in index:
-        try:
-            gas.append(points[api_well_num][year]["Gas Produced, MCF"])
-        except:
-            gas.append(0)
-        try:
-            oil.append(points[api_well_num][year]["Oil Produced, bbl"])
-        except:
-            oil.append(0)
-        try:
-            water.append(points[api_well_num][year]["Water Produced, bbl"])
-        except:
-            water.append(0)
-
-    return index, gas, oil, water
-
-
-def produce_aggregate(selected, year_slider):
-
-    index = list(range(max(year_slider[0], 1985), 2016))
-    gas = []
-    oil = []
-    water = []
-
-    for year in index:
-        count_gas = 0
-        count_oil = 0
-        count_water = 0
-        for api_well_num in selected:
-            try:
-                count_gas += points[api_well_num][year]["Gas Produced, MCF"]
-            except:
-                pass
-            try:
-                count_oil += points[api_well_num][year]["Oil Produced, bbl"]
-            except:
-                pass
-            try:
-                count_water += points[api_well_num][year]["Water Produced, bbl"]
-            except:
-                pass
-        gas.append(count_gas)
-        oil.append(count_oil)
-        water.append(count_water)
-
-    return index, gas, oil, water
+# def human_format(num):
+#     if num == 0:
+#         return "0"
+#
+#     magnitude = int(math.log(num, 1000))
+#     mantissa = str(int(num / (1000 ** magnitude)))
+#     return mantissa + ["", "K", "M", "G", "T", "P"][magnitude]
+#
+#
+# def filter_dataframe(df, well_statuses, well_types, year_slider):
+#     dff = df[
+#         df["Well_Status"].isin(well_statuses)
+#         & df["Well_Type"].isin(well_types)
+#         & (df["Date_Well_Completed"] > dt.datetime(year_slider[0], 1, 1))
+#         & (df["Date_Well_Completed"] < dt.datetime(year_slider[1], 1, 1))
+#     ]
+#     return dff
+#
+#
+# def produce_individual(api_well_num):
+#     try:
+#         points[api_well_num]
+#     except:
+#         return None, None, None, None
+#
+#     index = list(
+#         range(min(points[api_well_num].keys()), max(points[api_well_num].keys()) + 1)
+#     )
+#     gas = []
+#     oil = []
+#     water = []
+#
+#     for year in index:
+#         try:
+#             gas.append(points[api_well_num][year]["Gas Produced, MCF"])
+#         except:
+#             gas.append(0)
+#         try:
+#             oil.append(points[api_well_num][year]["Oil Produced, bbl"])
+#         except:
+#             oil.append(0)
+#         try:
+#             water.append(points[api_well_num][year]["Water Produced, bbl"])
+#         except:
+#             water.append(0)
+#
+#     return index, gas, oil, water
+#
+#
+# def produce_aggregate(selected, year_slider):
+#
+#     index = list(range(max(year_slider[0], 1985), 2016))
+#     gas = []
+#     oil = []
+#     water = []
+#
+#     for year in index:
+#         count_gas = 0
+#         count_oil = 0
+#         count_water = 0
+#         for api_well_num in selected:
+#             try:
+#                 count_gas += points[api_well_num][year]["Gas Produced, MCF"]
+#             except:
+#                 pass
+#             try:
+#                 count_oil += points[api_well_num][year]["Oil Produced, bbl"]
+#             except:
+#                 pass
+#             try:
+#                 count_water += points[api_well_num][year]["Water Produced, bbl"]
+#             except:
+#                 pass
+#         gas.append(count_gas)
+#         oil.append(count_oil)
+#         water.append(count_water)
+#
+#     return index, gas, oil, water
 
 
 # Create callbacks
-app.clientside_callback(
-    ClientsideFunction(namespace="clientside", function_name="resize"),
-    Output("output-clientside", "children"),
-    [Input("count_graph", "figure")],
-)
+# app.clientside_callback(
+#     ClientsideFunction(namespace="clientside", function_name="resize"),
+#     Output("output-clientside", "children"),
+#     [Input("count_graph", "figure")],
+# )
 
 
-@app.callback(
-    Output("aggregate_data", "data"),
-    [
-        Input("well_statuses", "value"),
-        Input("well_types", "value"),
-        Input("year_slider", "value"),
-    ],
-)
-def update_production_text(well_statuses, well_types, year_slider):
-
-    dff = filter_dataframe(df, well_statuses, well_types, year_slider)
-    selected = dff["API_WellNo"].values
-    index, gas, oil, water = produce_aggregate(selected, year_slider)
-    return [human_format(sum(gas)), human_format(sum(oil)), human_format(sum(water))]
-
-
-# Radio -> multi
-@app.callback(
-    Output("well_statuses", "value"), [Input("well_status_selector", "value")]
-)
-def display_status(selector):
-    if selector == "all":
-        return list(WELL_STATUSES.keys())
-    elif selector == "active":
-        return ["AC"]
-    return []
+# @app.callback(
+#     Output("aggregate_data", "data"),
+#     [
+#         Input("well_statuses", "value"),
+#         Input("well_types", "value"),
+#         Input("year_slider", "value"),
+#     ],
+# )
+# def update_production_text(well_statuses, well_types, year_slider):
+#
+#     dff = filter_dataframe(df, well_statuses, well_types, year_slider)
+#     selected = dff["API_WellNo"].values
+#     index, gas, oil, water = produce_aggregate(selected, year_slider)
+#     return [human_format(sum(gas)), human_format(sum(oil)), human_format(sum(water))]
 
 
-# Radio -> multi
-@app.callback(Output("well_types", "value"), [Input("well_type_selector", "value")])
-def display_type(selector):
-    if selector == "all":
-        return list(WELL_TYPES.keys())
-    elif selector == "productive":
-        return ["GD", "GE", "GW", "IG", "IW", "OD", "OE", "OW"]
-    return []
-
-
-# Slider -> count graph
-@app.callback(Output("year_slider", "value"), [Input("count_graph", "selectedData")])
-def update_year_slider(count_graph_selected):
-
-    if count_graph_selected is None:
-        return [1990, 2010]
-
-    nums = [int(point["pointNumber"]) for point in count_graph_selected["points"]]
-    return [min(nums) + 1960, max(nums) + 1961]
-
-
-# Selectors -> well text
-@app.callback(
-    Output("well_text", "children"),
-    [
-        Input("well_statuses", "value"),
-        Input("well_types", "value"),
-        Input("year_slider", "value"),
-    ],
-)
-def update_well_text(well_statuses, well_types, year_slider):
-
-    dff = filter_dataframe(df, well_statuses, well_types, year_slider)
-    return dff.shape[0]
-
-
-@app.callback(
-    [
-        Output("gasText", "children"),
-        Output("oilText", "children"),
-        Output("waterText", "children"),
-    ],
-    [Input("aggregate_data", "data")],
-)
-def update_text(data):
-    return data[0] + " mcf", data[1] + " bbl", data[2] + " bbl"
+# # Radio -> multi
+# @app.callback(
+#     Output("well_statuses", "value"), [Input("well_status_selector", "value")]
+# )
+# def display_status(selector):
+#     if selector == "all":
+#         return list(WELL_STATUSES.keys())
+#     elif selector == "active":
+#         return ["AC"]
+#     return []
+#
+#
+# # Radio -> multi
+# @app.callback(Output("well_types", "value"), [Input("well_type_selector", "value")])
+# def display_type(selector):
+#     if selector == "all":
+#         return list(WELL_TYPES.keys())
+#     elif selector == "productive":
+#         return ["GD", "GE", "GW", "IG", "IW", "OD", "OE", "OW"]
+#     return []
+#
+#
+# # Slider -> count graph
+# @app.callback(Output("year_slider", "value"), [Input("count_graph", "selectedData")])
+# def update_year_slider(count_graph_selected):
+#
+#     if count_graph_selected is None:
+#         return [1990, 2010]
+#
+#     nums = [int(point["pointNumber"]) for point in count_graph_selected["points"]]
+#     return [min(nums) + 1960, max(nums) + 1961]
+#
+#
+# # Selectors -> well text
+# @app.callback(
+#     Output("well_text", "children"),
+#     [
+#         Input("well_statuses", "value"),
+#         Input("well_types", "value"),
+#         Input("year_slider", "value"),
+#     ],
+# )
+# def update_well_text(well_statuses, well_types, year_slider):
+#
+#     dff = filter_dataframe(df, well_statuses, well_types, year_slider)
+#     return dff.shape[0]
+#
+#
+# @app.callback(
+#     [
+#         Output("gasText", "children"),
+#         Output("oilText", "children"),
+#         Output("waterText", "children"),
+#     ],
+#     [Input("aggregate_data", "data")],
+# )
+# def update_text(data):
+#     return data[0] + " mcf", data[1] + " bbl", data[2] + " bbl"
 
 
 # Selectors -> main graph
+
 @app.callback(
     Output("main_graph", "figure"),
     [
-        Input("well_statuses", "value"),
-        Input("well_types", "value"),
-        Input("year_slider", "value"),
-    ],
-    [State("lock_selector", "value"), State("main_graph", "relayoutData")],
+        Input("CCAA_types" , "value") , Input("PROV_types" , "value") , Input("municipio_types" , "value") ,
+        Input("partida_de_coste_types" , "value")
+    ],[State("main_graph", "relayoutData")]
+    # [State("lock_selector", "value"), State("main_graph", "relayoutData")],
 )
-def make_main_figure(
-    well_statuses, well_types, year_slider, selector, main_graph_layout
-):
-
-    dff = filter_dataframe(df, well_statuses, well_types, year_slider)
-
-    traces = []
-    for well_type, dfff in dff.groupby("Well_Type"):
-        trace = dict(
-            type="scattermapbox",
-            lon=dfff["Surface_Longitude"],
-            lat=dfff["Surface_latitude"],
-            text=dfff["Well_Name"],
-            customdata=dfff["API_WellNo"],
-            name=WELL_TYPES[well_type],
-            marker=dict(size=4, opacity=0.6),
-        )
-        traces.append(trace)
+def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_types,main_graph_layout):
+    graph = df_final_pob_melt.loc[(df_final_pob_melt['Nombre Ente Principal'] == municipio_types)]
+    fig = px.bar(graph,x='Descripción', y='coste_efectivo',template='seaborn',title='sdsds',barmode='stack', orientation='v')
 
     # relayoutData is None by default, and {'autosize': True} without relayout action
-    if main_graph_layout is not None and selector is not None and "locked" in selector:
-        if "mapbox.center" in main_graph_layout.keys():
-            lon = float(main_graph_layout["mapbox.center"]["lon"])
-            lat = float(main_graph_layout["mapbox.center"]["lat"])
-            zoom = float(main_graph_layout["mapbox.zoom"])
-            layout["mapbox"]["center"]["lon"] = lon
-            layout["mapbox"]["center"]["lat"] = lat
-            layout["mapbox"]["zoom"] = zoom
+    # if main_graph_layout is not None :
+    #     if "mapbox.center" in main_graph_layout.keys():
+    #         lon = float(main_graph_layout["mapbox.center"]["lon"])
+    #         lat = float(main_graph_layout["mapbox.center"]["lat"])
+    #         zoom = float(main_graph_layout["mapbox.zoom"])
+    #         layout["mapbox"]["center"]["lon"] = lon
+    #         layout["mapbox"]["center"]["lat"] = lat
+    #         layout["mapbox"]["zoom"] = zoom
 
-    figure = dict(data=traces, layout=layout)
-    return figure
+    # figure = dict(data=traces, layout=layout)
+
+    return fig
+
+
+
+
+
+
+
+
+
+
+# @app.callback(
+#     Output("main_graph", "figure"),
+#     [
+#         Input("well_statuses", "value"),
+#         Input("well_types", "value"),
+#         Input("year_slider", "value"),
+#     ],
+#     [State("lock_selector", "value"), State("main_graph", "relayoutData")],
+# )
+# def make_main_figure(
+#     well_statuses, well_types, year_slider, selector, main_graph_layout
+# ):
+#
+#     dff = filter_dataframe(df, well_statuses, well_types, year_slider)
+#
+#     traces = []
+#     for well_type, dfff in dff.groupby("Well_Type"):
+#         trace = dict(
+#             type="scattermapbox",
+#             lon=dfff["Surface_Longitude"],
+#             lat=dfff["Surface_latitude"],
+#             text=dfff["Well_Name"],
+#             customdata=dfff["API_WellNo"],
+#             name=WELL_TYPES[well_type],
+#             marker=dict(size=4, opacity=0.6),
+#         )
+#         traces.append(trace)
+#
+#     # relayoutData is None by default, and {'autosize': True} without relayout action
+#     if main_graph_layout is not None and selector is not None and "locked" in selector:
+#         if "mapbox.center" in main_graph_layout.keys():
+#             lon = float(main_graph_layout["mapbox.center"]["lon"])
+#             lat = float(main_graph_layout["mapbox.center"]["lat"])
+#             zoom = float(main_graph_layout["mapbox.zoom"])
+#             layout["mapbox"]["center"]["lon"] = lon
+#             layout["mapbox"]["center"]["lat"] = lat
+#             layout["mapbox"]["zoom"] = zoom
+#
+#     figure = dict(data=traces, layout=layout)
+#     return figure
 
 
 # Main graph -> individual graph

@@ -1,3 +1,28 @@
+import pandas as pd
+
+df_indicadores = pd.read_parquet(f'../data/processed/df_indicadores.parquet')
+df_final_pob = pd.read_parquet('../data/processed/df_final_pob.parquet')
+df_final_pob_melt = pd.read_parquet('../data/processed/df_final_pob_melt.parquet')
+df_final_pob_melt_PC = pd.read_parquet('../data/processed/df_final_pob_melt_PC.parquet')
+
+CCAA=sorted(df_final_pob['CCAA'].unique().to_list())
+CCAA.insert(0, 'TODAS')
+CCAA_dict = dict(zip(CCAA, CCAA))
+
+prov=sorted(df_final_pob['Provincia'].unique().to_list())
+prov.insert(0, 'TODAS')
+PROV = dict(zip(prov, prov))
+
+mun=sorted(df_final_pob['Nombre Ente Principal'].unique().to_list())
+mun.insert(0, 'TODOS')
+MUNICIPIOS = dict(zip(mun, mun))
+
+pdc=sorted(list(df_final_pob_melt['Descripción'].unique()))
+pdc.insert(0, 'TODOS')
+PDC = dict(zip(pdc, pdc))
+
+
+
 # flake8: noqa
 
 # In[]:
@@ -143,3 +168,5 @@ WELL_COLORS = dict(
     TH="#EAE5D9",
     UN="#C29A84",
 )
+
+

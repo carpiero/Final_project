@@ -466,7 +466,7 @@ def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
     [
         Input("CCAA_types" , "value") , Input("PROV_types" , "value") , Input("municipio_types" , "value") ,
         Input("partida_de_coste_types" , "value")
-    ],[State("main_graph", "relayoutData")]
+    ]#,[State("main_graph", "relayoutData")]
     # [State("lock_selector", "value"), State("main_graph", "relayoutData")],
 )
 def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_types,main_graph_layout):
