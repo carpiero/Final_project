@@ -13,10 +13,16 @@ import numpy as np
 import plotly.express as px
 import re
 import locale
+import plotly.graph_objects as go
 
 # Multi-dropdown options
 from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
 from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores, df_final_pob_melt_PC
+
+#################  change data
+
+df_final_pob_melt_PC['Descripción'] = df_final_pob_melt_PC['Descripción'].str.replace(r'^...' , '')
+
 
 # get relative data folder
 PATH = pathlib.Path(__file__).parent
@@ -452,7 +458,7 @@ def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
             cohorte =df_final_pob_melt.loc[df_final_pob_melt['Nombre Ente Principal'] == municipio_types , 'cohorte_pob'] \
                 .unique().to_list()[0]
             value = np.median(df_final_pob_melt_PC.loc[(df_final_pob_melt_PC['cohorte_pob'] == cohorte) & \
-                    (df_final_pob_melt_PC['Descripción'] == f'PC_{partida_de_coste_types}') & (df_final_pob_melt_PC['coste_efectivo_PC'] > 0) , 'coste_efectivo_PC'])
+                    (df_final_pob_melt_PC['Descripción'] == f'{partida_de_coste_types}') & (df_final_pob_melt_PC['coste_efectivo_PC'] > 0) , 'coste_efectivo_PC'])
 
             # value=df_final_pob_melt.loc[(df_final_pob_melt['cohorte_pob'] == cohorte) & (df_final_pob_melt['Descripción'] == partida_de_coste_types), 'coste_efectivo'].sum() \
             #                     / df_final_pob.loc[df_final_pob['cohorte_pob'] == cohorte , 'Población 2018'].sum()
@@ -654,10 +660,142 @@ def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_typ
 
     return fig
 
+@app.callback(Output("individual_graph", "figure"),
+    [
+        Input("CCAA_types" , "value") , Input("PROV_types" , "value") , Input("municipio_types" , "value")
+    ],[State("main_graph", "relayoutData")]
+    # [State("lock_selector", "value"), State("main_graph", "relayoutData")],
+)
+def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
+
+    if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+
+        df = df_final_pob_melt.pivot_table(index=['Descripción'] , values=['coste_efectivo'] , aggfunc=sum).sort_values(
+            by='coste_efectivo' , ascending=False).reset_index()
+        div = df_final_pob['Población 2018'].sum()
+        df['coste_efectivo_new'] = df.apply(lambda new: round(new['coste_efectivo'] / div , 0) , axis=1)
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=df['Descripción'] ,y=df['coste_efectivo_new'] ,name='Total Nacional' ,marker_color='rgb(55, 83, 109)'))
+        fig.add_trace(go.Bar(x=df['Descripción'] ,y=df['coste_efectivo_new'] ,name='Total Nacional' ,marker_color='rgb(26, 118, 255)'))
+
+    elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+
+        df = df_final_pob_melt.pivot_table(index=['Descripción'] , values=['coste_efectivo'] , aggfunc=sum).sort_values(
+            by='coste_efectivo' , ascending=False).reset_index()
+        div = df_final_pob['Población 2018'].sum()
+        df['coste_efectivo_new'] = df.apply(lambda new: round(new['coste_efectivo'] / div , 0) , axis=1)
+
+        df2 = df_final_pob_melt.pivot_table(index=['CCAA' , 'Descripción'] , values=['coste_efectivo'] ,
+                                           aggfunc=sum).sort_values(by='coste_efectivo' , ascending=False).reset_index()
+        div = df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types , 'Población 2018'].sum()
+        df2 = df2.loc[df2['CCAA'] == CCAA_types]
+        df2['coste_efectivo_new'] = df2.apply(lambda new: round(new['coste_efectivo'] / div,0) , axis=1)
+
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=df2['Descripción'] , y=df2['coste_efectivo_new'] , name=f'{CCAA_types}' ,
+                             marker_color='rgb(55, 83, 109)'))
+        fig.add_trace(go.Bar(x=df['Descripción'] , y=df['coste_efectivo_new'] , name='Total Nacional' ,
+                             marker_color='rgb(26, 118, 255)'))
+
+
+    elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+
+        df = df_final_pob_melt.pivot_table(index=['Provincia' , 'Descripción'] , values=['coste_efectivo'] ,
+                                           aggfunc=sum).sort_values(by='coste_efectivo' , ascending=False).reset_index()
+        div = df_final_pob.loc[df_final_pob['Provincia'] == PROV_types , 'Población 2018'].sum()
+        df = df.loc[df['Provincia'] == PROV_types]
+        df['coste_efectivo_new'] = df.apply(lambda new: round(new['coste_efectivo'] / div,0) , axis=1)
+
+
+        df2 = df_final_pob_melt.pivot_table(index=['CCAA' , 'Descripción'] , values=['coste_efectivo'] ,
+                                            aggfunc=sum).sort_values(by='coste_efectivo' ,ascending=False).reset_index()
+        div = df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types , 'Población 2018'].sum()
+        df2 = df2.loc[df2['CCAA'] == CCAA_types]
+        df2['coste_efectivo_new'] = df2.apply(lambda new: round(new['coste_efectivo'] / div,0) , axis=1)
+
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=df['Descripción'] , y=df['coste_efectivo_new'] , name=f'{PROV_types}' ,
+                             marker_color='rgb(55, 83, 109)'))
+        fig.add_trace(go.Bar(x=df2['Descripción'] , y=df2['coste_efectivo_new'] , name=f'{CCAA_types}' ,
+                             marker_color='rgb(26, 118, 255)'))
+
+    elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+
+        df = df_final_pob_melt.pivot_table(index=['Provincia' , 'Descripción'] , values=['coste_efectivo'] ,
+                                           aggfunc=sum).sort_values(by='coste_efectivo' , ascending=False).reset_index()
+        div = df_final_pob.loc[df_final_pob['Provincia'] == PROV_types , 'Población 2018'].sum()
+        df = df.loc[df['Provincia'] == PROV_types]
+        df['coste_efectivo_new'] = df.apply(lambda new: round(new['coste_efectivo'] / div,0) , axis=1)
+
+
+        df2 = df_final_pob_melt.pivot_table(index=['Descripción'] , values=['coste_efectivo'] , aggfunc=sum).sort_values(
+            by='coste_efectivo' , ascending=False).reset_index()
+        div = df_final_pob['Población 2018'].sum()
+        df2['coste_efectivo_new'] = df2.apply(lambda new: round(new['coste_efectivo'] / div , 0) , axis=1)
+
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=df['Descripción'] , y=df['coste_efectivo_new'] , name=f'{PROV_types}' ,
+                             marker_color='rgb(55, 83, 109)'))
+        fig.add_trace(go.Bar(x=df2['Descripción'] , y=df2['coste_efectivo_new'] , name=f'Total Nacional' ,
+                             marker_color='rgb(26, 118, 255)'))
+
+    else:
+        df =df_final_pob_melt_PC.loc[df_final_pob_melt_PC['Nombre Ente Principal'] == municipio_types].sort_values(by='coste_efectivo_PC',ascending=False)
+        df['coste_efectivo_PC'] = df.apply(lambda new: round(new['coste_efectivo_PC'] , 0) , axis=1)
+
+
+
+        cohorte = df_final_pob_melt.loc[df_final_pob_melt['Nombre Ente Principal'] == municipio_types , 'cohorte_pob'] \
+            .unique().to_list()[0]
+
+        df2 = df_final_pob_melt_PC.loc[ df_final_pob_melt_PC['coste_efectivo_PC'] > 0]
+        df2 = df2.pivot_table(index=['cohorte_pob','Descripción'],values=['coste_efectivo_PC'],aggfunc=np.median).reset_index()
+        df2= df2.loc[df2['cohorte_pob'] == cohorte]
+        df2['coste_efectivo_PC'] = df2.apply(lambda new: round(new['coste_efectivo_PC'] , 0) , axis=1)
+
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=df['Descripción'] , y=df['coste_efectivo_PC'] , name=f'{municipio_types}' ,
+                             marker_color='rgb(55, 83, 109)'))
+        fig.add_trace(go.Bar(x=df2['Descripción'] , y=df2['coste_efectivo_PC'] , name=f'Municipios con {cohorte} Hab.' ,
+                             marker_color='rgb(26, 118, 255)'))
 
 
 
 
+
+
+    fig.update_layout(margin=dict(l=20 , r=50 , t=50 , b=50) ,
+                          title='Costes efectivo por tipo de coste' ,
+                          xaxis_tickfont_size=12 ,
+                          xaxis_tickangle=-45 ,
+                          yaxis=dict(
+                              title='Coste efectivo Euros' ,
+                              titlefont_size=16 ,
+                              tickfont_size=14 ,
+                          ) ,
+                          xaxis=dict(
+                              title='Tipos de Coste efectivo' ,
+                              titlefont_size=16 ,
+                              tickfont_size=14 , showticklabels=False ,
+                          ) ,
+
+                          legend=dict(
+                              x=0.6 ,
+                              y=0.8 ,
+                              bgcolor='rgba(255, 255, 255, 0)' ,
+                              bordercolor='rgba(255, 255, 255, 0)'
+                          ) ,
+                          barmode='group' ,
+                          bargap=0.20 ,  # gap between bars of adjacent location coordinates.
+                          bargroupgap=0.1  # gap between bars of the same location coordinate.
+                          )
+
+    return fig
 
 
 
@@ -705,68 +843,68 @@ def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_typ
 #     return figure
 
 
-# Main graph -> individual graph
-@app.callback(Output("individual_graph", "figure"), [Input("main_graph", "hoverData")])
-def make_individual_figure(main_graph_hover):
-
-    layout_individual = copy.deepcopy(layout)
-
-    if main_graph_hover is None:
-        main_graph_hover = {
-            "points": [
-                {"curveNumber": 4, "pointNumber": 569, "customdata": 31101173130000}
-            ]
-        }
-
-    chosen = [point["customdata"] for point in main_graph_hover["points"]]
-    index, gas, oil, water = produce_individual(chosen[0])
-
-    if index is None:
-        annotation = dict(
-            text="No data available",
-            x=0.5,
-            y=0.5,
-            align="center",
-            showarrow=False,
-            xref="paper",
-            yref="paper",
-        )
-        layout_individual["annotations"] = [annotation]
-        data = []
-    else:
-        data = [
-            dict(
-                type="scatter",
-                mode="lines+markers",
-                name="Gas Produced (mcf)",
-                x=index,
-                y=gas,
-                line=dict(shape="spline", smoothing=2, width=1, color="#fac1b7"),
-                marker=dict(symbol="diamond-open"),
-            ),
-            dict(
-                type="scatter",
-                mode="lines+markers",
-                name="Oil Produced (bbl)",
-                x=index,
-                y=oil,
-                line=dict(shape="spline", smoothing=2, width=1, color="#a9bb95"),
-                marker=dict(symbol="diamond-open"),
-            ),
-            dict(
-                type="scatter",
-                mode="lines+markers",
-                name="Water Produced (bbl)",
-                x=index,
-                y=water,
-                line=dict(shape="spline", smoothing=2, width=1, color="#92d8d8"),
-                marker=dict(symbol="diamond-open"),
-            ),
-        ]
-        layout_individual["title"] = dataset[chosen[0]]["Well_Name"]
-
-    figure = dict(data=data, layout=layout_individual)
-    return figure
+# # Main graph -> individual graph
+# @app.callback(Output("individual_graph", "figure"), [Input("main_graph", "hoverData")])
+# def make_individual_figure(main_graph_hover):
+#
+#     layout_individual = copy.deepcopy(layout)
+#
+#     if main_graph_hover is None:
+#         main_graph_hover = {
+#             "points": [
+#                 {"curveNumber": 4, "pointNumber": 569, "customdata": 31101173130000}
+#             ]
+#         }
+#
+#     chosen = [point["customdata"] for point in main_graph_hover["points"]]
+#     index, gas, oil, water = produce_individual(chosen[0])
+#
+#     if index is None:
+#         annotation = dict(
+#             text="No data available",
+#             x=0.5,
+#             y=0.5,
+#             align="center",
+#             showarrow=False,
+#             xref="paper",
+#             yref="paper",
+#         )
+#         layout_individual["annotations"] = [annotation]
+#         data = []
+#     else:
+#         data = [
+#             dict(
+#                 type="scatter",
+#                 mode="lines+markers",
+#                 name="Gas Produced (mcf)",
+#                 x=index,
+#                 y=gas,
+#                 line=dict(shape="spline", smoothing=2, width=1, color="#fac1b7"),
+#                 marker=dict(symbol="diamond-open"),
+#             ),
+#             dict(
+#                 type="scatter",
+#                 mode="lines+markers",
+#                 name="Oil Produced (bbl)",
+#                 x=index,
+#                 y=oil,
+#                 line=dict(shape="spline", smoothing=2, width=1, color="#a9bb95"),
+#                 marker=dict(symbol="diamond-open"),
+#             ),
+#             dict(
+#                 type="scatter",
+#                 mode="lines+markers",
+#                 name="Water Produced (bbl)",
+#                 x=index,
+#                 y=water,
+#                 line=dict(shape="spline", smoothing=2, width=1, color="#92d8d8"),
+#                 marker=dict(symbol="diamond-open"),
+#             ),
+#         ]
+#         layout_individual["title"] = dataset[chosen[0]]["Well_Name"]
+#
+#     figure = dict(data=data, layout=layout_individual)
+#     return figure
 
 
 # Selectors, main graph -> aggregate graph

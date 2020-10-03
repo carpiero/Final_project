@@ -5,6 +5,7 @@ df_final_pob = pd.read_parquet('../data/processed/df_final_pob.parquet')
 df_final_pob_melt = pd.read_parquet('../data/processed/df_final_pob_melt.parquet')
 df_final_pob_melt_PC = pd.read_parquet('../data/processed/df_final_pob_melt_PC.parquet')
 
+
 CCAA=sorted(df_final_pob['CCAA'].unique().to_list())
 CCAA.insert(0, 'TODAS')
 CCAA_dict = dict(zip(CCAA, CCAA))
