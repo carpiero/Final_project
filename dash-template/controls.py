@@ -1,6 +1,6 @@
 import pandas as pd
 
-df_indicadores = pd.read_parquet(f'../data/processed/df_indicadores.parquet')
+df_indicadores_pob = pd.read_parquet(f'../data/processed/df_indicadores_pob.parquet')
 df_final_pob = pd.read_parquet('../data/processed/df_final_pob.parquet')
 df_final_pob_melt = pd.read_parquet('../data/processed/df_final_pob_melt.parquet')
 df_final_pob_melt_PC = pd.read_parquet('../data/processed/df_final_pob_melt_PC.parquet')
