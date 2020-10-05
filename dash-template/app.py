@@ -18,7 +18,8 @@ import plotly.graph_objects as go
 
 # Multi-dropdown options
 from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
-from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores_pob, df_final_pob_melt_PC
+from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores_pob, \
+    df_final_pob_melt_PC, df_table_c, df_table_n, df_table_p, df_n, df_c, df_p
 
 #################  change data
 
@@ -246,12 +247,8 @@ app.layout = html.Div(
             [
                 html.Div(
                     [dcc.Graph(id="pie_graph")],
-                    className="pretty_container seven columns",
-                ),
-                html.Div(
-                    [dcc.Graph(id="aggregate_graph")],
-                    className="pretty_container five columns",
-                ),
+                    className="pretty_container seven columns",style={'width': '100%'}
+                )
             ],
             className="row flex-display",
         ),
@@ -261,6 +258,11 @@ app.layout = html.Div(
 )
 
 ####################################################
+app.clientside_callback(
+    ClientsideFunction(namespace="clientside", function_name="resize"),
+    Output("output-clientside", "children"),
+    [Input("count_graph", "figure")],
+)
 
 @app.callback(
     [Output("PROV_types", "value"),Output("PROV_types", "options")], [Input("CCAA_types", "value")]
@@ -640,6 +642,105 @@ def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
 
 
 # Selectors -> main graph
+@app.callback(
+    Output("count_graph", "figure"),
+    [
+        Input("CCAA_types" , "value") , Input("PROV_types" , "value") , Input("municipio_types" , "value") ,
+        Input("partida_de_coste_types" , "value")
+    ],[State("main_graph", "relayoutData")]
+    # [State("lock_selector", "value"), State("main_graph", "relayoutData")],
+)
+def make_count_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_types, main_graph):
+    if partida_de_coste_types == 'TODOS':
+        if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            df = df_n
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df['Descripción'] , y=df['coste_efectivo_new'] , name='Total Nacional' ,
+                                 marker_color='rgb(55, 83, 109)'))
+            fig.add_trace(go.Bar(x=df['Descripción'] , y=df['coste_efectivo_new'] , name='Total Nacional' ,
+                                 marker_color='rgb(26, 118, 255)'))
+
+
+
+
+
+
+
+
+    #     if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+    #         value = df_final_pob_melt['coste_efectivo'].sum() / df_final_pob['Población 2018'].sum()
+    #
+    #     elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+    #         value = df_final_pob_melt['coste_efectivo'].sum() / df_final_pob['Población 2018'].sum()
+    #
+    #     elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+    #         value = df_final_pob_melt.loc[df_final_pob_melt['CCAA'] == CCAA_types , 'coste_efectivo'].sum() \
+    #                 / df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types , 'Población 2018'].sum()
+    #
+    #     elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+    #         value = df_final_pob_melt['coste_efectivo'].sum() / df_final_pob['Población 2018'].sum()
+    #
+    #     else:
+    #         cohorte = \
+    #         df_final_pob_melt.loc[df_final_pob_melt['Nombre Ente Principal'] == municipio_types , 'cohorte_pob'] \
+    #             .unique().to_list()[0]
+    #
+    #         value = df_final_pob_melt.loc[df_final_pob_melt['cohorte_pob'] == cohorte , 'coste_efectivo'].sum() \
+    #                 / df_final_pob.loc[df_final_pob['cohorte_pob'] == cohorte , 'Población 2018'].sum()
+    #
+    # else:
+    #     if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+    #         value = df_final_pob_melt.loc[
+    #                     df_final_pob_melt['Descripción'] == partida_de_coste_types , 'coste_efectivo'].sum() \
+    #                 / df_final_pob['Población 2018'].sum()
+    #
+    #     elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+    #         value = df_final_pob_melt.loc[
+    #                     df_final_pob_melt['Descripción'] == partida_de_coste_types , 'coste_efectivo'].sum() \
+    #                 / df_final_pob['Población 2018'].sum()
+    #
+    #     elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+    #         value = df_final_pob_melt.loc[(df_final_pob_melt['CCAA'] == CCAA_types) & (
+    #                     df_final_pob_melt['Descripción'] == partida_de_coste_types) , 'coste_efectivo'].sum() \
+    #                 / df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types , 'Población 2018'].sum()
+    #
+    #     elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+    #         value = df_final_pob_melt.loc[
+    #                     df_final_pob_melt['Descripción'] == partida_de_coste_types , 'coste_efectivo'].sum() \
+    #                 / df_final_pob['Población 2018'].sum()
+    #
+    #     else:
+
+    fig.update_layout(margin=dict(l=20 , r=50 , t=50 , b=50) ,
+                      title='Costes efectivo por tipo de coste' ,
+                      xaxis_tickfont_size=12 ,
+                      xaxis_tickangle=-45 ,
+                      yaxis=dict(
+                          title='Coste efectivo Euros/Hab.' ,
+                          titlefont_size=16 ,
+                          tickfont_size=14 ,
+                      ) ,
+                      xaxis=dict(
+                          title='Tipos de Coste efectivo' ,
+                          titlefont_size=16 ,
+                          tickfont_size=14 , showticklabels=True ,
+                      ) ,
+
+                      legend=dict(
+                          x=0.55 ,
+                          y=0.8 ,
+                          bgcolor='rgba(255, 255, 255, 0)' ,
+                          bordercolor='rgba(255, 255, 255, 0)'
+                      ) ,
+                      barmode='group' ,
+                      bargap=0.20 ,  # gap between bars of adjacent location coordinates.
+                      bargroupgap=0.1,  # gap between bars of the same location coordinate.
+                      autosize=True)
+
+    return fig
+
+
 
 @app.callback(
     Output("main_graph", "figure"),
@@ -651,29 +752,29 @@ def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
 )
 def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_types, main_graph):
     if partida_de_coste_types == 'TODOS':
-        if partida_de_coste_types == 'TODOS' and municipio_types != 'TODOS':
-
-            df_table = df_indicadores_pob.loc[(df_indicadores_pob['Nombre Ente Principal'] == municipio_types)&\
-                            (df_indicadores_pob['Nº unidades']>0)]
-            df_table['Nº unidades'] =  df_table['Nº unidades'].apply(lambda x: round(x,0))
-
-            df_table['Nº unidades'] = (df_table['Nº unidades'].map('{:,.0f}'.format).str.replace("," , "~").str.replace("." ,
-                                  ",").str.replace("~" , "."))
-
-            fig = go.Figure()
-
-            fig.add_trace(go.Table(
-                columnwidth=[105,105, 90],
-                header=dict(values=list(df_indicadores_pob[['Descripción','Unidades físicas de referencia' , 'Nº unidades']].columns) ,
-                            fill_color='rgb(55, 83, 109)' ,
-                            align=['left','center'] ,
-                            font=dict(color='white' , size=13)) ,
-                cells=dict(values=[df_table['Descripción'],df_table['Unidades físicas de referencia'] , df_table['Nº unidades']] ,
-                           fill_color='rgb(243, 240, 255)' ,
-                           align=['left','center']))
-            )
-
-        else:
+        # if partida_de_coste_types == 'TODOS' and municipio_types != 'TODOS':
+        #
+        #     df_table = df_indicadores_pob.loc[(df_indicadores_pob['Nombre Ente Principal'] == municipio_types)&\
+        #                     (df_indicadores_pob['Nº unidades']>0)]
+        #     df_table['Nº unidades'] =  df_table['Nº unidades'].apply(lambda x: round(x,0))
+        #
+        #     df_table['Nº unidades'] = (df_table['Nº unidades'].map('{:,.0f}'.format).str.replace("," , "~").str.replace("." ,
+        #                           ",").str.replace("~" , "."))
+        #
+        #     fig = go.Figure()
+        #
+        #     fig.add_trace(go.Table(
+        #         columnwidth=[105,105, 90],
+        #         header=dict(values=list(df_indicadores_pob[['Descripción','Unidades físicas de referencia' , 'Nº unidades']].columns) ,
+        #                     fill_color='rgb(55, 83, 109)' ,
+        #                     align=['left','center'] ,
+        #                     font=dict(color='white' , size=13)) ,
+        #         cells=dict(values=[df_table['Descripción'],df_table['Unidades físicas de referencia'] , df_table['Nº unidades']] ,
+        #                    fill_color='rgb(243, 240, 255)' ,
+        #                    align=['left','center']))
+        #     )
+        #
+        # else:
 
             df_table = {'Seleccionar Partida de coste, para ver indicadores.': [1]}
             df_table = pd.DataFrame(data=df_table)
@@ -694,13 +795,12 @@ def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_typ
 
     else:
         if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-            df_table = df_indicadores_pob.pivot_table(index=['Descripción','Unidades físicas de referencia'],values=['Nº unidades'],
-                                                      aggfunc=sum).reset_index()
+            df_table = df_table_n
             df_table = df_table.loc[(df_table['Descripción'] == partida_de_coste_types) &\
                                               (df_table['Nº unidades'] > 0)]
 
             df_table['Nº unidades'] = df_table['Nº unidades'].apply(lambda x: round(x , 0))
-            df_table['Nº unidades'] = df_table['Nº unidades'].map('{:,.2f}'.format).str.replace("," , "~").str.replace(
+            df_table['Nº unidades'] = df_table['Nº unidades'].map('{:,.0f}'.format).str.replace("," , "~").str.replace(
                 "." , ",").str.replace("~" , ".")
 
             fig = go.Figure()
@@ -717,30 +817,87 @@ def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_typ
                            align=['left' , 'center']))
             )
 
-        #     value=df_final_pob_melt.loc[df_final_pob_melt['Descripción'] == partida_de_coste_types,'coste_efectivo'].sum()\
-        #            /df_final_pob['Población 2018'].sum()
-        #
-        # elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-        #     value = df_final_pob_melt.loc[df_final_pob_melt['Descripción'] == partida_de_coste_types,'coste_efectivo'].sum()\
-        #            /df_final_pob['Población 2018'].sum()
-        #
-        # elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
-        #      value = df_final_pob_melt.loc[(df_final_pob_melt['CCAA'] == CCAA_types)&(df_final_pob_melt['Descripción'] == partida_de_coste_types), 'coste_efectivo'].sum() \
-        #             / df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types , 'Población 2018'].sum()
-        #
-        # elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
-        #     value= df_final_pob_melt.loc[df_final_pob_melt['Descripción'] == partida_de_coste_types , 'coste_efectivo'].sum() \
-        #     / df_final_pob['Población 2018'].sum()
+
+        elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            df_table = df_table_c
+            df_table = df_table.loc[(df_table['CCAA'] == CCAA_types) & (df_table['Descripción'] == partida_de_coste_types) & \
+                                    (df_table['Nº unidades'] > 0)]
+
+            df_table['Nº unidades'] = df_table['Nº unidades'].apply(lambda x: round(x , 0))
+            df_table['Nº unidades'] = df_table['Nº unidades'].map('{:,.0f}'.format).str.replace("," , "~").str.replace(
+                "." , ",").str.replace("~" , ".")
+
+            fig = go.Figure()
+
+            fig.add_trace(go.Table(
+                columnwidth=[200 , 90] ,
+                header=dict(
+                    values=list(df_indicadores_pob[['Unidades físicas de referencia' , 'Nº unidades']].columns) ,
+                    fill_color='rgb(55, 83, 109)' ,
+                    align=['left' , 'center'] ,
+                    font=dict(color='white' , size=13)) ,
+                cells=dict(values=[df_table['Unidades físicas de referencia'] , df_table['Nº unidades']] ,
+                           fill_color='rgb(243, 240, 255)' ,
+                           align=['left' , 'center']))
+            )
+
+        elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            df_table = df_table_p
+            df_table = df_table.loc[
+                (df_table['Provincia'] == PROV_types) & (df_table['Descripción'] == partida_de_coste_types) & \
+                (df_table['Nº unidades'] > 0)]
+
+            df_table['Nº unidades'] = df_table['Nº unidades'].apply(lambda x: round(x , 0))
+            df_table['Nº unidades'] = df_table['Nº unidades'].map('{:,.0f}'.format).str.replace("," , "~").str.replace(
+                "." , ",").str.replace("~" , ".")
+
+            fig = go.Figure()
+
+            fig.add_trace(go.Table(
+                columnwidth=[200 , 90] ,
+                header=dict(
+                    values=list(df_indicadores_pob[['Unidades físicas de referencia' , 'Nº unidades']].columns) ,
+                    fill_color='rgb(55, 83, 109)' ,
+                    align=['left' , 'center'] ,
+                    font=dict(color='white' , size=13)) ,
+                cells=dict(values=[df_table['Unidades físicas de referencia'] , df_table['Nº unidades']] ,
+                           fill_color='rgb(243, 240, 255)' ,
+                           align=['left' , 'center']))
+            )
+
+        elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            df_table = df_table_p
+            df_table = df_table.loc[
+                (df_table['Provincia'] == PROV_types) & (df_table['Descripción'] == partida_de_coste_types) & \
+                (df_table['Nº unidades'] > 0)]
+
+            df_table['Nº unidades'] = df_table['Nº unidades'].apply(lambda x: round(x , 0))
+            df_table['Nº unidades'] = df_table['Nº unidades'].map('{:,.0f}'.format).str.replace("," , "~").str.replace(
+                "." , ",").str.replace("~" , ".")
+
+            fig = go.Figure()
+
+            fig.add_trace(go.Table(
+                columnwidth=[200 , 90] ,
+                header=dict(
+                    values=list(df_indicadores_pob[['Unidades físicas de referencia' , 'Nº unidades']].columns) ,
+                    fill_color='rgb(55, 83, 109)' ,
+                    align=['left' , 'center'] ,
+                    font=dict(color='white' , size=13)) ,
+                cells=dict(values=[df_table['Unidades físicas de referencia'] , df_table['Nº unidades']] ,
+                           fill_color='rgb(243, 240, 255)' ,
+                           align=['left' , 'center']))
+            )
 
 
-        elif partida_de_coste_types != 'TODOS' and municipio_types != 'TODOS':
+        elif municipio_types != 'TODOS':
 
             df_table= df_indicadores_pob.loc[(df_indicadores_pob['Descripción']==partida_de_coste_types)&\
                            (df_indicadores_pob['Nombre Ente Principal']==municipio_types)&\
                             (df_indicadores_pob['Nº unidades']>0)]
 
             df_table['Nº unidades'] = df_table['Nº unidades'].apply(lambda x: round(x , 0))
-            df_table['Nº unidades'] = df_table['Nº unidades'].map('{:,.2f}'.format).str.replace(",", "~").str.replace(".", ",").str.replace("~", ".")
+            df_table['Nº unidades'] = df_table['Nº unidades'].map('{:,.0f}'.format).str.replace(",", "~").str.replace(".", ",").str.replace("~", ".")
 
             fig = go.Figure()
 
@@ -776,10 +933,7 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 
     if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
 
-        df = df_final_pob_melt.pivot_table(index=['Descripción'] , values=['coste_efectivo'] , aggfunc=sum).sort_values(
-            by='coste_efectivo' , ascending=False).reset_index()
-        div = df_final_pob['Población 2018'].sum()
-        df['coste_efectivo_new'] = df.apply(lambda new: round(new['coste_efectivo'] / div , 0) , axis=1)
+        df = df_n
 
         fig = go.Figure()
         fig.add_trace(go.Bar(x=df['Descripción'] ,y=df['coste_efectivo_new'] ,name='Total Nacional' ,marker_color='rgb(55, 83, 109)'))
@@ -787,13 +941,10 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 
     elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
 
-        df = df_final_pob_melt.pivot_table(index=['Descripción'] , values=['coste_efectivo'] , aggfunc=sum).sort_values(
-            by='coste_efectivo' , ascending=False).reset_index()
-        div = df_final_pob['Población 2018'].sum()
-        df['coste_efectivo_new'] = df.apply(lambda new: round(new['coste_efectivo'] / div , 0) , axis=1)
+        df = df_n
 
-        df2 = df_final_pob_melt.pivot_table(index=['CCAA' , 'Descripción'] , values=['coste_efectivo'] ,
-                                           aggfunc=sum).sort_values(by='coste_efectivo' , ascending=False).reset_index()
+        df2 = df_c
+
         div = df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types , 'Población 2018'].sum()
         df2 = df2.loc[df2['CCAA'] == CCAA_types]
         df2['coste_efectivo_new'] = df2.apply(lambda new: round(new['coste_efectivo'] / div,0) , axis=1)
@@ -808,15 +959,13 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 
     elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
 
-        df = df_final_pob_melt.pivot_table(index=['Provincia' , 'Descripción'] , values=['coste_efectivo'] ,
-                                           aggfunc=sum).sort_values(by='coste_efectivo' , ascending=False).reset_index()
+        df = df_p
         div = df_final_pob.loc[df_final_pob['Provincia'] == PROV_types , 'Población 2018'].sum()
         df = df.loc[df['Provincia'] == PROV_types]
         df['coste_efectivo_new'] = df.apply(lambda new: round(new['coste_efectivo'] / div,0) , axis=1)
 
 
-        df2 = df_final_pob_melt.pivot_table(index=['CCAA' , 'Descripción'] , values=['coste_efectivo'] ,
-                                            aggfunc=sum).sort_values(by='coste_efectivo' ,ascending=False).reset_index()
+        df2 = df_c
         div = df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types , 'Población 2018'].sum()
         df2 = df2.loc[df2['CCAA'] == CCAA_types]
         df2['coste_efectivo_new'] = df2.apply(lambda new: round(new['coste_efectivo'] / div,0) , axis=1)
@@ -830,18 +979,13 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 
     elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
 
-        df = df_final_pob_melt.pivot_table(index=['Provincia' , 'Descripción'] , values=['coste_efectivo'] ,
-                                           aggfunc=sum).sort_values(by='coste_efectivo' , ascending=False).reset_index()
+        df = df_p
         div = df_final_pob.loc[df_final_pob['Provincia'] == PROV_types , 'Población 2018'].sum()
         df = df.loc[df['Provincia'] == PROV_types]
         df['coste_efectivo_new'] = df.apply(lambda new: round(new['coste_efectivo'] / div,0) , axis=1)
 
 
-        df2 = df_final_pob_melt.pivot_table(index=['Descripción'] , values=['coste_efectivo'] , aggfunc=sum).sort_values(
-            by='coste_efectivo' , ascending=False).reset_index()
-        div = df_final_pob['Población 2018'].sum()
-        df2['coste_efectivo_new'] = df2.apply(lambda new: round(new['coste_efectivo'] / div , 0) , axis=1)
-
+        df2 = df_n
 
         fig = go.Figure()
         fig.add_trace(go.Bar(x=df['Descripción'] , y=df['coste_efectivo_new'] , name=f'{PROV_types}' ,
@@ -1190,3 +1334,5 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 # Main
 if __name__ == "__main__":
     app.run_server(debug=True)
+
+    ########### debug FALSE

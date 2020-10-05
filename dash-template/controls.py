@@ -22,6 +22,37 @@ pdc=sorted(list(df_final_pob_melt['Descripción'].unique()))
 pdc.insert(0, 'TODOS')
 PDC = dict(zip(pdc, pdc))
 
+###########################    main graph
+
+df_table_c = df_indicadores_pob.pivot_table(index=['CCAA','Descripción' , 'Unidades físicas de referencia'] ,
+                                                      values=['Nº unidades'] ,
+                                                      aggfunc=sum).reset_index()
+
+
+
+df_table_n = df_indicadores_pob.pivot_table(index=['Descripción','Unidades físicas de referencia'],values=['Nº unidades'],
+                                                      aggfunc=sum).reset_index()
+
+
+
+
+df_table_p=df_indicadores_pob.pivot_table(index=['Provincia','Descripción' , 'Unidades físicas de referencia'] ,
+                                                      values=['Nº unidades'] ,
+                                                      aggfunc=sum).reset_index()
+
+
+############################ individual graph
+
+df_n = df_final_pob_melt.pivot_table(index=['Descripción'] , values=['coste_efectivo'] , aggfunc=sum).sort_values(
+            by='coste_efectivo' , ascending=False).reset_index()
+div = df_final_pob['Población 2018'].sum()
+df_n['coste_efectivo_new'] = df_n.apply(lambda new: round(new['coste_efectivo'] / div , 0) , axis=1)
+
+df_c= df_final_pob_melt.pivot_table(index=['CCAA' , 'Descripción'] , values=['coste_efectivo'] ,
+                    aggfunc=sum).sort_values(by='coste_efectivo' , ascending=False).reset_index()
+
+df_p = df_final_pob_melt.pivot_table(index=['Provincia' , 'Descripción'] , values=['coste_efectivo'] ,
+                                           aggfunc=sum).sort_values(by='coste_efectivo' , ascending=False).reset_index()
 
 
 # flake8: noqa
