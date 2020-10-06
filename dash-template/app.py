@@ -19,7 +19,7 @@ import plotly.graph_objects as go
 # Multi-dropdown options
 from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
 from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores_pob, \
-    df_final_pob_melt_PC, df_table_c, df_table_n, df_table_p, df_n, df_c, df_p
+    df_final_pob_melt_PC, df_table_c, df_table_n, df_table_p, df_n, df_c, df_p, df_count_c, df_count_c_pc, df_count_p, df_count_p_pc
 
 #################  change data
 
@@ -392,7 +392,7 @@ def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
 
     value=locale.format_string('%.0f', round(value,0), True)
 
-    return f'{value} Euros'
+    return f'{value} €'
 
 @app.callback (Output("Coste_efectivo_por_Habitante_text", "children"),
     [
@@ -413,7 +413,7 @@ def update_text(Población_text, Coste_efectivo_Total_text):
 
     value = locale.format_string('%.0f' , round(value,0) , True)
 
-    return f'{value} Euros/Hab.'
+    return f'{value} €/hab.'
 
 
 @app.callback (Output("Coste_efectivo_Medio_por_Habitante_text", "children"),
@@ -474,7 +474,7 @@ def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
 
     value=locale.format_string('%.0f', round(value,0), True)
 
-    return f'{value} Euros/Hab.'
+    return f'{value} €/hab.'
 
 # Helper functions
 # def human_format(num):
@@ -653,26 +653,100 @@ def update_text(CCAA_types, PROV_types,municipio_types,partida_de_coste_types ):
 def make_count_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_types, main_graph):
     if partida_de_coste_types == 'TODOS':
         if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-            df = df_n
+            df = df_count_c
+            df = [df.head(2) , df[df_count_c.shape[0] // 2:(df.shape[0] // 2) + 1] ,df.tail(2)]
+            df = pd.concat(df , sort=True)
+
 
             fig = go.Figure()
-            fig.add_trace(go.Bar(x=df['Descripción'] , y=df['coste_efectivo_new'] , name='Total Nacional' ,
-                                 marker_color='rgb(55, 83, 109)'))
-            fig.add_trace(go.Bar(x=df['Descripción'] , y=df['coste_efectivo_new'] , name='Total Nacional' ,
-                                 marker_color='rgb(26, 118, 255)'))
+            fig.add_trace(go.Bar(x=df['CCAA'] , y=df['PC_TOTAL']))
+
+        elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            df = df_count_c
+            df = [df.head(2) , df.loc[df['CCAA']==CCAA_types], df.tail(2)]
+            df = pd.concat(df)
+            df.iloc[2,0]=f'{CCAA_types}.'
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df['CCAA'] , y=df['PC_TOTAL']))
+
+        elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            df = df_count_p
+
+            df = df.sort_values(by='PC_TOTAL', ascending=False)
+            df = [df.head(2) , df.loc[df['Provincia'] == PROV_types] ,df.tail(2)]
+            df = pd.concat(df)
+
+            df.iloc[2 , 0] = f'{PROV_types}.'
+
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df['Provincia'] , y=df['PC_TOTAL']))
+
+        elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            df = df_count_p
+
+            df = df.sort_values(by='PC_TOTAL' , ascending=False)
+            df = [df.head(2) , df.loc[df['Provincia'] == PROV_types] , df.tail(2)]
+            df = pd.concat(df)
+
+            df.iloc[2 , 0] = f'{PROV_types}.'
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df['Provincia'] , y=df['PC_TOTAL']))
 
 
 
 
 
 
+    else:
+        if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            df = df_count_c_pc
+
+            df = df.loc[df['Descripción'] == partida_de_coste_types].sort_values(by='PC_TOTAL' ,ascending=False)
+            df = [df.head(2) , df.tail(2) , df[df.shape[0] // 2:(df.shape[0] // 2) + 1]]
+            df = pd.concat(df).sort_values(by='PC_TOTAL' , ascending=False)
 
 
-    #     if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-    #         value = df_final_pob_melt['coste_efectivo'].sum() / df_final_pob['Población 2018'].sum()
-    #
-    #     elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-    #         value = df_final_pob_melt['coste_efectivo'].sum() / df_final_pob['Población 2018'].sum()
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df['CCAA'] , y=df['PC_TOTAL']))
+
+        elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            df = df_count_c_pc
+
+            df = df.loc[df['Descripción'] == partida_de_coste_types].sort_values(by='PC_TOTAL' , ascending=False)
+            df = [df.head(2) , df.loc[df['CCAA']==CCAA_types], df.tail(2)]
+            df = pd.concat(df)
+            df.iloc[2,0] = f'{CCAA_types}.'
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df['CCAA'] , y=df['PC_TOTAL']))
+
+        elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            df = df_count_p_pc
+
+            df = df.loc[df['Descripción'] == partida_de_coste_types].sort_values(by='PC_TOTAL' , ascending=False)
+            df = [df.head(2) , df.loc[df['Provincia'] == PROV_types] , df.tail(2)]
+            df = pd.concat(df)
+            df.iloc[2 , 0] = f'{PROV_types}.'
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df['Provincia'] , y=df['PC_TOTAL']))
+
+
+        elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            df = df_count_p_pc
+
+            df = df.loc[df['Descripción'] == partida_de_coste_types].sort_values(by='PC_TOTAL' , ascending=False)
+            df = [df.head(2) , df.loc[df['Provincia'] == PROV_types] , df.tail(2)]
+            df = pd.concat(df)
+            df.iloc[2 , 0] = f'{PROV_types}.'
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df['Provincia'] , y=df['PC_TOTAL']))
+
+
     #
     #     elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
     #         value = df_final_pob_melt.loc[df_final_pob_melt['CCAA'] == CCAA_types , 'coste_efectivo'].sum() \
@@ -711,18 +785,18 @@ def make_count_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_ty
     #                 / df_final_pob['Población 2018'].sum()
     #
     #     else:
-
-    fig.update_layout(margin=dict(l=20 , r=50 , t=50 , b=50) ,
-                      title='Costes efectivo por tipo de coste' ,
+    fig.update_traces(texttemplate="%{y:.0f} €/hab" , textposition='inside',marker_line_color='rgb(8,48,107)',
+                      marker_color=['rgb(55, 83, 109)', 'rgb(55, 83, 109)', 'rgb(217, 95, 2)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)'])
+    fig.update_layout(margin=dict(l=20 , r=50 , t=30 , b=10),
+                      title=f'Costes efectivo por Habitante, {partida_de_coste_types}' ,
                       xaxis_tickfont_size=12 ,
-                      xaxis_tickangle=-45 ,
+                      # xaxis_tickangle=90 ,
                       yaxis=dict(
                           title='Coste efectivo Euros/Hab.' ,
                           titlefont_size=16 ,
-                          tickfont_size=14 ,
+                          tickfont_size=14 ,showticklabels=True,
                       ) ,
                       xaxis=dict(
-                          title='Tipos de Coste efectivo' ,
                           titlefont_size=16 ,
                           tickfont_size=14 , showticklabels=True ,
                       ) ,
@@ -733,9 +807,9 @@ def make_count_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_ty
                           bgcolor='rgba(255, 255, 255, 0)' ,
                           bordercolor='rgba(255, 255, 255, 0)'
                       ) ,
-                      barmode='group' ,
-                      bargap=0.20 ,  # gap between bars of adjacent location coordinates.
-                      bargroupgap=0.1,  # gap between bars of the same location coordinate.
+                      barmode='relative' ,
+                      bargap=0.55 ,  # gap between bars of adjacent location coordinates.
+                      # bargroupgap=0.1,  # gap between bars of the same location coordinate.
                       autosize=True)
 
     return fig

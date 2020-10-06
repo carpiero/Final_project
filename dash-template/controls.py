@@ -55,6 +55,32 @@ df_p = df_final_pob_melt.pivot_table(index=['Provincia' , 'Descripción'] , valu
                                            aggfunc=sum).sort_values(by='coste_efectivo' , ascending=False).reset_index()
 
 
+############################################# count graph
+
+df_count_c=df_final_pob.pivot_table(index=['CCAA'] ,values=['TOTAL','Población 2018'] ,aggfunc=sum).reset_index()
+df_count_c['PC_TOTAL'] = df_count_c.apply(lambda new: round(new['TOTAL']/new['Población 2018'],0), axis=1)
+df_count_c=df_count_c.sort_values(by='PC_TOTAL',ascending=False)
+df_count_c['CCAA'] = df_count_c['CCAA'].astype('object')
+
+
+pob_c=df_final_pob.pivot_table(index=['CCAA'] ,values=['Población 2018'] ,aggfunc=sum).reset_index()
+df_count_c_pc=df_final_pob_melt.pivot_table(index=['CCAA','Descripción'] ,values=['coste_efectivo'] ,aggfunc=sum).reset_index()
+df_count_c_pc = pd.merge(df_count_c_pc, pob_c, on='CCAA', how='left')
+df_count_c_pc['PC_TOTAL'] = df_count_c_pc.apply(lambda new: round(new['coste_efectivo']/new['Población 2018'],), axis=1)
+df_count_c_pc['CCAA'] = df_count_c_pc['CCAA'].astype('object')
+
+df_count_p=df_final_pob.pivot_table(index=['Provincia'] ,values=['TOTAL','Población 2018'] ,aggfunc=sum).reset_index()
+df_count_p['PC_TOTAL'] = df_count_p.apply(lambda new: new['TOTAL']/new['Población 2018'], axis=1)
+df_count_p['Provincia'] = df_count_p['Provincia'].astype('object')
+
+pob_p=df_final_pob.pivot_table(index=['Provincia'] ,values=['Población 2018'] ,aggfunc=sum).reset_index()
+df_count_p_pc=df_final_pob_melt.pivot_table(index=['Provincia','Descripción'] ,values=['coste_efectivo'] ,aggfunc=sum).reset_index()
+df_count_p_pc = pd.merge(df_count_p_pc, pob_p, on='Provincia', how='left')
+df_count_p_pc['PC_TOTAL'] = df_count_p_pc.apply(lambda new: round(new['coste_efectivo']/new['Población 2018'],), axis=1)
+df_count_p_pc['Provincia'] = df_count_p_pc['Provincia'].astype('object')
+
+
+
 # flake8: noqa
 
 # In[]:
