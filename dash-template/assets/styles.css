@@ -5,7 +5,7 @@
 
 body {
   background-color: #f2f2f2;
-  margin: 5%;
+  margin: 3%;
 }
 
 .two.columns {
@@ -25,6 +25,7 @@ body {
   position: relative;
   box-shadow: 2px 2px 2px lightgrey;
 
+
 }
 
 .bare_container {
@@ -33,10 +34,10 @@ body {
 }
 
 .dcc_control {
-  margin: 10px;
-  padding: 10px;
+  margin: 0px;
+  padding: 5px;
   width: calc(100%-40px);
-  height: 40px;
+
 }
 
 .control_label {
@@ -102,6 +103,7 @@ body {
   padding: 15px;
   position: relative;
   box-shadow: 2px 2px 2px lightgrey;
+  height: 55px ; ###################################################
 }
 
 #right-column {
@@ -142,4 +144,10 @@ body {
 #pie_graph > div > div > svg:nth-child(3) > g.infolayer > g.legend {
   pointer-events: all;
   transform: translate(30px, 349px);
+}
+
+#map_graph {
+  position: absolute;
+  height: calc(100% - 30px);
+  width: calc(100% - 30px);
 }

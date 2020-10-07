@@ -19,7 +19,7 @@ import plotly.graph_objects as go
 # Multi-dropdown options
 from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
 from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores_pob, \
-    df_final_pob_melt_PC, df_table_c, df_table_n, df_table_p, df_n, df_c, df_p, df_count_c, df_count_c_pc, df_count_p, df_count_p_pc
+    df_final_pob_melt_PC, df_table_c, df_table_n, df_table_p, df_n, df_c, df_p, df_count_c, df_count_c_pc, df_count_p, df_count_p_pc, counties
 
 #################  change data
 
@@ -105,15 +105,15 @@ app.layout = html.Div(
             [
                 html.Div(
                     [
-                        html.Img(
-                            src=app.get_asset_url("dash-logo.png"),
-                            id="plotly-image",
-                            style={
-                                "height": "60px",
-                                "width": "auto",
-                                "margin-bottom": "25px",
-                            },
-                        )
+                        # html.Img(
+                        #     src=app.get_asset_url("dash-logo.png"),
+                        #     id="plotly-image",
+                        #     style={
+                        #         "height": "60px",
+                        #         "width": "auto",
+                        #         "margin-bottom": "25px",
+                        #     },
+                        # )
                     ],
                     className="one-third column",
                 ),
@@ -123,7 +123,7 @@ app.layout = html.Div(
                             [
                                 html.H3(
                                     "Municipios",
-                                    style={"margin-bottom": "2px"},
+                                    style={"margin-bottom": "0px"},
                                 ),
                                 html.H5(
                                     "Coste efectivo", style={"margin-top": "0px"}
@@ -147,7 +147,7 @@ app.layout = html.Div(
             ],
             id="header",
             className="row flex-display",
-            style={"margin-bottom": "2px"},
+            style={"margin-bottom": "0px"},
         ),
         html.Div(
             [
@@ -198,19 +198,19 @@ app.layout = html.Div(
                                     className="mini_container" ,
                                 ) ,
                                 html.Div(
-                                    [html.H6(id="Coste_efectivo_Total_text") , html.P("Coste efectivo Total")] ,
+                                    [html.H6(id="Coste_efectivo_Total_text") , html.P("Coste Total")] ,
                                     id="Coste_efectivo_Total" ,
                                     className="mini_container" ,
                                 ) ,
                                 html.Div(
                                     [html.H6(id='Coste_efectivo_por_Habitante_text') ,
-                                     html.P("Coste efectivo por Habitante")] ,
+                                     html.P("Coste por Habitante")] ,
                                     id="Coste_efectivo_por_Habitante" ,
                                     className="mini_container" ,
                                 ) ,
                                 html.Div(
                                     [html.H6(id="Coste_efectivo_Medio_por_Habitante_text") ,
-                                     html.P("Coste efectivo Medio por Habitante")] ,
+                                     html.P("Coste Medio por Habitante")] ,
                                     id="Coste_efectivo_Medio_por_Habitante" ,
                                     className="mini_container" ,
                                 ),
@@ -219,7 +219,7 @@ app.layout = html.Div(
                             className="row container-display",
                         ),
                         html.Div(
-                            [dcc.Graph(id="count_graph")],
+                            [dcc.Graph(id="count_graph",config = {'displayModeBar': False})],
                             id="countGraphContainer",
                             className="pretty_container",
                         ),
@@ -233,12 +233,12 @@ app.layout = html.Div(
         html.Div(
             [
                 html.Div(
-                    [dcc.Graph(id="main_graph")],
-                    className="pretty_container seven columns",style={'width': '34%'}
+                    [dcc.Graph(id="main_graph",config = {'displayModeBar': False})],
+                    className="pretty_container four columns",#style={'width': '34.2%'}
                 ),
                 html.Div(
-                    [dcc.Graph(id="individual_graph")],
-                    className="pretty_container five columns",style={'width': '66%'}
+                    [dcc.Graph(id="individual_graph",config = {'displayModeBar': False})],
+                    className="pretty_container eight columns",#style={'width': '65.8%'}
                 ),
             ],
             className="row flex-display",
@@ -246,8 +246,8 @@ app.layout = html.Div(
         html.Div(
             [
                 html.Div(
-                    [dcc.Graph(id="pie_graph")],
-                    className="pretty_container seven columns",style={'width': '100%'}
+                    [dcc.Graph(id="map_graph")],
+                    className="pretty_container seven columns",style={'height': '600px'},
                 )
             ],
             className="row flex-display",
@@ -695,7 +695,20 @@ def make_count_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_ty
             fig = go.Figure()
             fig.add_trace(go.Bar(x=df['Provincia'] , y=df['PC_TOTAL']))
 
+        else:
+            cohorte = df_final_pob.loc[df_final_pob['Nombre Ente Principal'] == municipio_types , 'cohorte_pob'].unique().to_list()[0]
 
+            df = df_final_pob[['Nombre Ente Principal' , 'cohorte_pob' , 'PC_TOTAL']].loc[
+                (df_final_pob['cohorte_pob'] == cohorte) & (df_final_pob['PC_TOTAL'] > 1)].sort_values(by='PC_TOTAL' ,
+                                                                                                       ascending=False)
+            df['Nombre Ente Principal'] = df['Nombre Ente Principal'].astype('object')
+            df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , ) , axis=1)
+            df = [df.head(2) , df.loc[df['Nombre Ente Principal'] == municipio_types] , df.tail(2)]
+            df = pd.concat(df)
+            df.iloc[2 , 0] = f'{municipio_types}.'
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df['Nombre Ente Principal'] , y=df['PC_TOTAL']))
 
 
 
@@ -746,71 +759,56 @@ def make_count_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_ty
             fig = go.Figure()
             fig.add_trace(go.Bar(x=df['Provincia'] , y=df['PC_TOTAL']))
 
+        else:
+            cohorte = df_final_pob_melt_PC.loc[
+                df_final_pob_melt_PC['Nombre Ente Principal'] == municipio_types , 'cohorte_pob'].unique().to_list()[0]
 
-    #
-    #     elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
-    #         value = df_final_pob_melt.loc[df_final_pob_melt['CCAA'] == CCAA_types , 'coste_efectivo'].sum() \
-    #                 / df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types , 'Población 2018'].sum()
-    #
-    #     elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
-    #         value = df_final_pob_melt['coste_efectivo'].sum() / df_final_pob['Población 2018'].sum()
-    #
-    #     else:
-    #         cohorte = \
-    #         df_final_pob_melt.loc[df_final_pob_melt['Nombre Ente Principal'] == municipio_types , 'cohorte_pob'] \
-    #             .unique().to_list()[0]
-    #
-    #         value = df_final_pob_melt.loc[df_final_pob_melt['cohorte_pob'] == cohorte , 'coste_efectivo'].sum() \
-    #                 / df_final_pob.loc[df_final_pob['cohorte_pob'] == cohorte , 'Población 2018'].sum()
-    #
-    # else:
-    #     if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-    #         value = df_final_pob_melt.loc[
-    #                     df_final_pob_melt['Descripción'] == partida_de_coste_types , 'coste_efectivo'].sum() \
-    #                 / df_final_pob['Población 2018'].sum()
-    #
-    #     elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-    #         value = df_final_pob_melt.loc[
-    #                     df_final_pob_melt['Descripción'] == partida_de_coste_types , 'coste_efectivo'].sum() \
-    #                 / df_final_pob['Población 2018'].sum()
-    #
-    #     elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
-    #         value = df_final_pob_melt.loc[(df_final_pob_melt['CCAA'] == CCAA_types) & (
-    #                     df_final_pob_melt['Descripción'] == partida_de_coste_types) , 'coste_efectivo'].sum() \
-    #                 / df_final_pob.loc[df_final_pob['CCAA'] == CCAA_types , 'Población 2018'].sum()
-    #
-    #     elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
-    #         value = df_final_pob_melt.loc[
-    #                     df_final_pob_melt['Descripción'] == partida_de_coste_types , 'coste_efectivo'].sum() \
-    #                 / df_final_pob['Población 2018'].sum()
-    #
-    #     else:
-    fig.update_traces(texttemplate="%{y:.0f} €/hab" , textposition='inside',marker_line_color='rgb(8,48,107)',
+            df = df_final_pob_melt_PC[['Nombre Ente Principal' , 'cohorte_pob' , 'Descripción' , 'coste_efectivo_PC']].loc[
+                (df_final_pob_melt_PC['cohorte_pob'] == cohorte) & (df_final_pob_melt_PC['coste_efectivo_PC'] >= 1) & (
+                df_final_pob_melt_PC['Descripción'] == partida_de_coste_types)].sort_values(by='coste_efectivo_PC' , ascending=False)
+            df['Nombre Ente Principal'] = df['Nombre Ente Principal'].astype('object')
+            df['coste_efectivo_PC'] = df.apply(lambda new: round(new['coste_efectivo_PC'] , ) , axis=1)
+            df = [df.head(2) , df.loc[df['Nombre Ente Principal'] == municipio_types] , df.tail(2)]
+            df = pd.concat(df)
+            df.iloc[2 , 0] = f'{municipio_types}.'
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df['Nombre Ente Principal'] , y=df['coste_efectivo_PC']))
+
+
+
+    fig.update_traces(texttemplate="%{y:,} €/h" , textposition='inside',marker_line_color='rgb(8,48,107)',
                       marker_color=['rgb(55, 83, 109)', 'rgb(55, 83, 109)', 'rgb(217, 95, 2)', 'rgb(26, 118, 255)', 'rgb(26, 118, 255)'])
-    fig.update_layout(margin=dict(l=20 , r=50 , t=30 , b=10),
-                      title=f'Costes efectivo por Habitante, {partida_de_coste_types}' ,
+
+    if partida_de_coste_types == 'TODOS':
+        fig.update_layout(title=f'Coste por Habitante Total' )
+
+    else:
+        fig.update_layout(title=f'Coste por Habitante, {partida_de_coste_types}')
+
+    fig.update_layout(margin=dict(l=10 , r=50 , t=50 , b=10),
                       xaxis_tickfont_size=12 ,
                       # xaxis_tickangle=90 ,
                       yaxis=dict(
-                          title='Coste efectivo Euros/Hab.' ,
+                          title='Coste efectivo €/Hab.' ,
                           titlefont_size=16 ,
-                          tickfont_size=14 ,showticklabels=True,
+                          tickfont_size=13 ,showticklabels=True,
                       ) ,
                       xaxis=dict(
                           titlefont_size=16 ,
-                          tickfont_size=14 , showticklabels=True ,
+                          tickfont_size=13 , showticklabels=True ,
                       ) ,
 
                       legend=dict(
                           x=0.55 ,
-                          y=0.8 ,
+                          y=1 ,
                           bgcolor='rgba(255, 255, 255, 0)' ,
                           bordercolor='rgba(255, 255, 255, 0)'
                       ) ,
                       barmode='relative' ,
                       bargap=0.55 ,  # gap between bars of adjacent location coordinates.
                       # bargroupgap=0.1,  # gap between bars of the same location coordinate.
-                      autosize=True)
+                      autosize=True,showlegend=False)
 
     return fig
 
@@ -883,11 +881,11 @@ def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_typ
                 columnwidth=[200 , 90] ,
                 header=dict(
                     values=list(df_indicadores_pob[['Unidades físicas de referencia' , 'Nº unidades']].columns) ,
-                    fill_color='rgb(55, 83, 109)' ,
+                    fill_color='rgb(55, 83, 109)' ,line_width=5,height=35,
                     align=['left' , 'center'] ,
-                    font=dict(color='white' , size=13)) ,
+                    font=dict(color='white' , size=15)) ,
                 cells=dict(values=[df_table['Unidades físicas de referencia'] , df_table['Nº unidades']] ,
-                           fill_color='rgb(243, 240, 255)' ,
+                           fill_color='#f2f2f2' ,font=dict(color='rgb(55, 83, 109)' , size=13),line_width=5,height=30,
                            align=['left' , 'center']))
             )
 
@@ -907,11 +905,11 @@ def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_typ
                 columnwidth=[200 , 90] ,
                 header=dict(
                     values=list(df_indicadores_pob[['Unidades físicas de referencia' , 'Nº unidades']].columns) ,
-                    fill_color='rgb(55, 83, 109)' ,
+                    fill_color='rgb(55, 83, 109)' ,line_width=5,height=35,
                     align=['left' , 'center'] ,
-                    font=dict(color='white' , size=13)) ,
+                    font=dict(color='white' , size=15)) ,
                 cells=dict(values=[df_table['Unidades físicas de referencia'] , df_table['Nº unidades']] ,
-                           fill_color='rgb(243, 240, 255)' ,
+                           fill_color='#f2f2f2' ,font=dict(color='rgb(55, 83, 109)' , size=13),line_width=5,height=30,
                            align=['left' , 'center']))
             )
 
@@ -931,11 +929,11 @@ def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_typ
                 columnwidth=[200 , 90] ,
                 header=dict(
                     values=list(df_indicadores_pob[['Unidades físicas de referencia' , 'Nº unidades']].columns) ,
-                    fill_color='rgb(55, 83, 109)' ,
+                    fill_color='rgb(55, 83, 109)' ,line_width=5,height=35,
                     align=['left' , 'center'] ,
-                    font=dict(color='white' , size=13)) ,
+                    font=dict(color='white' , size=15)) ,
                 cells=dict(values=[df_table['Unidades físicas de referencia'] , df_table['Nº unidades']] ,
-                           fill_color='rgb(243, 240, 255)' ,
+                           fill_color='#f2f2f2' ,font=dict(color='rgb(55, 83, 109)' , size=13),line_width=5,height=30,
                            align=['left' , 'center']))
             )
 
@@ -955,11 +953,11 @@ def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_typ
                 columnwidth=[200 , 90] ,
                 header=dict(
                     values=list(df_indicadores_pob[['Unidades físicas de referencia' , 'Nº unidades']].columns) ,
-                    fill_color='rgb(55, 83, 109)' ,
+                    fill_color='rgb(55, 83, 109)' ,line_width=5,height=35,
                     align=['left' , 'center'] ,
-                    font=dict(color='white' , size=13)) ,
+                    font=dict(color='white' , size=15)) ,
                 cells=dict(values=[df_table['Unidades físicas de referencia'] , df_table['Nº unidades']] ,
-                           fill_color='rgb(243, 240, 255)' ,
+                           fill_color='#f2f2f2' ,font=dict(color='rgb(55, 83, 109)' , size=13),line_width=5,height=30,
                            align=['left' , 'center']))
             )
 
@@ -978,11 +976,11 @@ def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_typ
             fig.add_trace(go.Table(
                 columnwidth=[200 , 90],
                 header=dict(values=list(df_indicadores_pob[['Unidades físicas de referencia','Nº unidades']].columns)  ,
-                            fill_color='rgb(55, 83, 109)' ,
+                            fill_color='rgb(55, 83, 109)' ,line_width=5,height=35,
                             align=['left','center'],
-                            font=dict(color='white', size=13)) ,
+                            font=dict(color='white', size=15)) ,
                 cells=dict(values=[df_table['Unidades físicas de referencia'],df_table['Nº unidades']] ,
-                           fill_color='rgb(243, 240, 255)' ,
+                           fill_color='#f2f2f2' ,font=dict(color='rgb(55, 83, 109)' , size=13),line_width=5,height=30,
                            align=['left','center']))
             )
 
@@ -993,7 +991,7 @@ def make_main_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_typ
 
 
 
-    fig.update_layout(margin=dict(l=20 , r=20 , t=60 , b=20),title='Indicadores por tipo de coste')
+    fig.update_layout(margin=dict(l=20 , r=20 , t=60 , b=20),title='Indicadores por Partida de coste')
 
     return fig
 
@@ -1094,25 +1092,26 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 
 
     fig.update_layout(margin=dict(l=20 , r=50 , t=50 , b=50) ,
-                          title='Costes efectivo por tipo de coste' ,
+                          title='Costes €/hab. por Partida de coste' ,
                           xaxis_tickfont_size=12 ,
                           xaxis_tickangle=-45 ,
                           yaxis=dict(
-                              title='Coste efectivo Euros/Hab.' ,
+                              title='Coste €/Hab.' ,
                               titlefont_size=16 ,
                               tickfont_size=14 ,
                           ) ,
                           xaxis=dict(
-                              title='Tipos de Coste efectivo' ,
+                              title='Partidas de Costes' ,
                               titlefont_size=16 ,
                               tickfont_size=14 , showticklabels=False ,
                           ) ,
 
                           legend=dict(
-                              x=0.55 ,
+                              x=0.50 ,
                               y=0.8 ,
                               bgcolor='rgba(255, 255, 255, 0)' ,
-                              bordercolor='rgba(255, 255, 255, 0)'
+                              bordercolor='rgba(255, 255, 255, 0)',
+                              font_size=14
                           ) ,
                           barmode='group' ,
                           bargap=0.20 ,  # gap between bars of adjacent location coordinates.
@@ -1121,288 +1120,35 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 
     return fig
 
+@app.callback(
+    Output("map_graph", "figure"),
+    [
+        Input("CCAA_types" , "value") , Input("PROV_types" , "value") , Input("municipio_types" , "value") ,
+        Input("partida_de_coste_types" , "value")
+    ],[State("main_graph", "relayoutData")]
+    # [State("lock_selector", "value"), State("main_graph", "relayoutData")],
+)
+def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_types, main_graph):
+    if partida_de_coste_types == 'TODOS':
+        df=df_final_pob
+        df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'],0) , axis=1)
+
+        fig = px.choropleth_mapbox(df, geojson=counties , locations='codigo_geo' , color='PC_TOTAL' ,
+                                   color_continuous_scale="Viridis" ,
+                                   range_color=(300,2000),
+                                   mapbox_style="carto-positron" , featureidkey="properties.f_codmun" ,
+                                   zoom=4.5, center={"lat": 40.463667 , "lon": -3.74922} ,
+                                   opacity=0.5 ,
+                                   hover_name='Nombre Ente Principal',hover_data=['Nombre Ente Principal'],
+                                                                      )
+        fig.update_layout(margin={"r": 0 , "t": 0 , "l": 0 , "b": 0})
 
 
 
-
-# @app.callback(
-#     Output("main_graph", "figure"),
-#     [
-#         Input("well_statuses", "value"),
-#         Input("well_types", "value"),
-#         Input("year_slider", "value"),
-#     ],
-#     [State("lock_selector", "value"), State("main_graph", "relayoutData")],
-# )
-# def make_main_figure(
-#     well_statuses, well_types, year_slider, selector, main_graph_layout
-# ):
-#
-#     dff = filter_dataframe(df, well_statuses, well_types, year_slider)
-#
-#     traces = []
-#     for well_type, dfff in dff.groupby("Well_Type"):
-#         trace = dict(
-#             type="scattermapbox",
-#             lon=dfff["Surface_Longitude"],
-#             lat=dfff["Surface_latitude"],
-#             text=dfff["Well_Name"],
-#             customdata=dfff["API_WellNo"],
-#             name=WELL_TYPES[well_type],
-#             marker=dict(size=4, opacity=0.6),
-#         )
-#         traces.append(trace)
-#
-#     # relayoutData is None by default, and {'autosize': True} without relayout action
-#     if main_graph_layout is not None and selector is not None and "locked" in selector:
-#         if "mapbox.center" in main_graph_layout.keys():
-#             lon = float(main_graph_layout["mapbox.center"]["lon"])
-#             lat = float(main_graph_layout["mapbox.center"]["lat"])
-#             zoom = float(main_graph_layout["mapbox.zoom"])
-#             layout["mapbox"]["center"]["lon"] = lon
-#             layout["mapbox"]["center"]["lat"] = lat
-#             layout["mapbox"]["zoom"] = zoom
-#
-#     figure = dict(data=traces, layout=layout)
-#     return figure
+    return fig
 
 
-# # Main graph -> individual graph
-# @app.callback(Output("individual_graph", "figure"), [Input("main_graph", "hoverData")])
-# def make_individual_figure(main_graph_hover):
-#
-#     layout_individual = copy.deepcopy(layout)
-#
-#     if main_graph_hover is None:
-#         main_graph_hover = {
-#             "points": [
-#                 {"curveNumber": 4, "pointNumber": 569, "customdata": 31101173130000}
-#             ]
-#         }
-#
-#     chosen = [point["customdata"] for point in main_graph_hover["points"]]
-#     index, gas, oil, water = produce_individual(chosen[0])
-#
-#     if index is None:
-#         annotation = dict(
-#             text="No data available",
-#             x=0.5,
-#             y=0.5,
-#             align="center",
-#             showarrow=False,
-#             xref="paper",
-#             yref="paper",
-#         )
-#         layout_individual["annotations"] = [annotation]
-#         data = []
-#     else:
-#         data = [
-#             dict(
-#                 type="scatter",
-#                 mode="lines+markers",
-#                 name="Gas Produced (mcf)",
-#                 x=index,
-#                 y=gas,
-#                 line=dict(shape="spline", smoothing=2, width=1, color="#fac1b7"),
-#                 marker=dict(symbol="diamond-open"),
-#             ),
-#             dict(
-#                 type="scatter",
-#                 mode="lines+markers",
-#                 name="Oil Produced (bbl)",
-#                 x=index,
-#                 y=oil,
-#                 line=dict(shape="spline", smoothing=2, width=1, color="#a9bb95"),
-#                 marker=dict(symbol="diamond-open"),
-#             ),
-#             dict(
-#                 type="scatter",
-#                 mode="lines+markers",
-#                 name="Water Produced (bbl)",
-#                 x=index,
-#                 y=water,
-#                 line=dict(shape="spline", smoothing=2, width=1, color="#92d8d8"),
-#                 marker=dict(symbol="diamond-open"),
-#             ),
-#         ]
-#         layout_individual["title"] = dataset[chosen[0]]["Well_Name"]
-#
-#     figure = dict(data=data, layout=layout_individual)
-#     return figure
 
-
-###################################################3 Selectors, main graph -> aggregate graph
-# @app.callback(
-#     Output("aggregate_graph", "figure"),
-#     [
-#         Input("well_statuses", "value"),
-#         Input("well_types", "value"),
-#         Input("year_slider", "value"),
-#         Input("main_graph", "hoverData"),
-#     ],
-# )
-# def make_aggregate_figure(well_statuses, well_types, year_slider, main_graph_hover):
-#
-#     layout_aggregate = copy.deepcopy(layout)
-#
-#     if main_graph_hover is None:
-#         main_graph_hover = {
-#             "points": [
-#                 {"curveNumber": 4, "pointNumber": 569, "customdata": 31101173130000}
-#             ]
-#         }
-#
-#     chosen = [point["customdata"] for point in main_graph_hover["points"]]
-#     well_type = dataset[chosen[0]]["Well_Type"]
-#     dff = filter_dataframe(df, well_statuses, well_types, year_slider)
-#
-#     selected = dff[dff["Well_Type"] == well_type]["API_WellNo"].values
-#     index, gas, oil, water = produce_aggregate(selected, year_slider)
-#
-#     data = [
-#         dict(
-#             type="scatter",
-#             mode="lines",
-#             name="Gas Produced (mcf)",
-#             x=index,
-#             y=gas,
-#             line=dict(shape="spline", smoothing="2", color="#F9ADA0"),
-#         ),
-#         dict(
-#             type="scatter",
-#             mode="lines",
-#             name="Oil Produced (bbl)",
-#             x=index,
-#             y=oil,
-#             line=dict(shape="spline", smoothing="2", color="#849E68"),
-#         ),
-#         dict(
-#             type="scatter",
-#             mode="lines",
-#             name="Water Produced (bbl)",
-#             x=index,
-#             y=water,
-#             line=dict(shape="spline", smoothing="2", color="#59C3C3"),
-#         ),
-#     ]
-#     layout_aggregate["title"] = "Aggregate: " + WELL_TYPES[well_type]
-#
-#     figure = dict(data=data, layout=layout_aggregate)
-#     return figure
-#
-#
-# # Selectors, main graph -> pie graph
-# @app.callback(
-#     Output("pie_graph", "figure"),
-#     [
-#         Input("well_statuses", "value"),
-#         Input("well_types", "value"),
-#         Input("year_slider", "value"),
-#     ],
-# )
-# def make_pie_figure(well_statuses, well_types, year_slider):
-#
-#     layout_pie = copy.deepcopy(layout)
-#
-#     dff = filter_dataframe(df, well_statuses, well_types, year_slider)
-#
-#     selected = dff["API_WellNo"].values
-#     index, gas, oil, water = produce_aggregate(selected, year_slider)
-#
-#     aggregate = dff.groupby(["Well_Type"]).count()
-#
-#     data = [
-#         dict(
-#             type="pie",
-#             labels=["Gas", "Oil", "Water"],
-#             values=[sum(gas), sum(oil), sum(water)],
-#             name="Production Breakdown",
-#             text=[
-#                 "Total Gas Produced (mcf)",
-#                 "Total Oil Produced (bbl)",
-#                 "Total Water Produced (bbl)",
-#             ],
-#             hoverinfo="text+value+percent",
-#             textinfo="label+percent+name",
-#             hole=0.5,
-#             marker=dict(colors=["#fac1b7", "#a9bb95", "#92d8d8"]),
-#             domain={"x": [0, 0.45], "y": [0.2, 0.8]},
-#         ),
-#         dict(
-#             type="pie",
-#             labels=[WELL_TYPES[i] for i in aggregate.index],
-#             values=aggregate["API_WellNo"],
-#             name="Well Type Breakdown",
-#             hoverinfo="label+text+value+percent",
-#             textinfo="label+percent+name",
-#             hole=0.5,
-#             marker=dict(colors=[WELL_COLORS[i] for i in aggregate.index]),
-#             domain={"x": [0.55, 1], "y": [0.2, 0.8]},
-#         ),
-#     ]
-#     layout_pie["title"] = "Production Summary: {} to {}".format(
-#         year_slider[0], year_slider[1]
-#     )
-#     layout_pie["font"] = dict(color="#777777")
-#     layout_pie["legend"] = dict(
-#         font=dict(color="#CCCCCC", size="10"), orientation="h", bgcolor="rgba(0,0,0,0)"
-#     )
-#
-#     figure = dict(data=data, layout=layout_pie)
-#     return figure
-#
-#
-# # Selectors -> count graph
-# @app.callback(
-#     Output("count_graph", "figure"),
-#     [
-#         Input("well_statuses", "value"),
-#         Input("well_types", "value"),
-#         Input("year_slider", "value"),
-#     ],
-# )
-# def make_count_figure(well_statuses, well_types, year_slider):
-#
-#     layout_count = copy.deepcopy(layout)
-#
-#     dff = filter_dataframe(df, well_statuses, well_types, [1960, 2017])
-#     g = dff[["API_WellNo", "Date_Well_Completed"]]
-#     g.index = g["Date_Well_Completed"]
-#     g = g.resample("A").count()
-#
-#     colors = []
-#     for i in range(1960, 2018):
-#         if i >= int(year_slider[0]) and i < int(year_slider[1]):
-#             colors.append("rgb(123, 199, 255)")
-#         else:
-#             colors.append("rgba(123, 199, 255, 0.2)")
-#
-#     data = [
-#         dict(
-#             type="scatter",
-#             mode="markers",
-#             x=g.index,
-#             y=g["API_WellNo"] / 2,
-#             name="All Wells",
-#             opacity=0,
-#             hoverinfo="skip",
-#         ),
-#         dict(
-#             type="bar",
-#             x=g.index,
-#             y=g["API_WellNo"],
-#             name="All Wells",
-#             marker=dict(color=colors),
-#         ),
-#     ]
-#
-#     layout_count["title"] = "Completed Wells/Year"
-#     layout_count["dragmode"] = "select"
-#     layout_count["showlegend"] = False
-#     layout_count["autosize"] = True
-#
-#     figure = dict(data=data, layout=layout_count)
-#     return figure
 
 
 # Main
