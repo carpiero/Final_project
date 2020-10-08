@@ -86,6 +86,10 @@ import json
 with open('../data/raw/shapefiles_espana_municipios.geojson') as response:
     counties = json.load(response)
 
+CCAA_CO = pd.read_parquet('../data/processed/CCAA_CO.parquet')
+
+
+
 
 
 # flake8: noqa

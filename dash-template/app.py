@@ -19,7 +19,8 @@ import plotly.graph_objects as go
 # Multi-dropdown options
 from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
 from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores_pob, \
-    df_final_pob_melt_PC, df_table_c, df_table_n, df_table_p, df_n, df_c, df_p, df_count_c, df_count_c_pc, df_count_p, df_count_p_pc, counties
+    df_final_pob_melt_PC, df_table_c, df_table_n, df_table_p, df_n, df_c, df_p, df_count_c, df_count_c_pc, df_count_p, df_count_p_pc, \
+    counties, CCAA_CO
 
 #################  change data
 
@@ -134,16 +135,16 @@ app.layout = html.Div(
                     className="one-half column",
                     id="title",
                 ),
-        #         html.Div(
-        #             [
-        #                 html.A(
-        #                     html.Button("Learn More", id="learn-more-button"),
-        #                     href="https://plot.ly/dash/pricing/",
-        #                 )
-        #             ],
-        #             className="one-third column",
-        #             id="button",
-        #         ),
+                html.Div(
+                    [
+                        html.A(
+                            html.Button("Learn More", id="learn-more-button"),
+                            href="https://github.com/carpiero/Final_project",
+                        )
+                    ],
+                    className="one-third column",
+                    id="button",
+                ),
             ],
             id="header",
             className="row flex-display",
@@ -1130,22 +1131,117 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 )
 def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_types, main_graph):
     if partida_de_coste_types == 'TODOS':
-        df=df_final_pob
-        df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'],0) , axis=1)
+        if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            df=df_final_pob
+            df['Población'] = df['Población 2018']
+            df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'],0) , axis=1)
 
-        fig = px.choropleth_mapbox(df, geojson=counties , locations='codigo_geo' , color='PC_TOTAL' ,
-                                   color_continuous_scale="Viridis" ,
-                                   range_color=(300,2000),
-                                   mapbox_style="carto-positron" , featureidkey="properties.f_codmun" ,
-                                   zoom=4.5, center={"lat": 40.463667 , "lon": -3.74922} ,
-                                   opacity=0.5 ,
-                                   hover_name='Nombre Ente Principal',hover_data=['Nombre Ente Principal'],
-                                                                      )
-        fig.update_layout(margin={"r": 0 , "t": 0 , "l": 0 , "b": 0})
+
+
+            fig = px.choropleth_mapbox(df, geojson=counties , locations='codigo_geo' , color='PC_TOTAL' ,
+                                       color_continuous_scale="haline" ,
+                                       # range_color=(300,3000),
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5, center={"lat": 40.463667 , "lon": -3.74922} ,
+                                       opacity=0.5 ,labels={'PC_TOTAL':'Coste por habitante'},
+                                       hover_name='Nombre Ente Principal',hover_data={'codigo_geo':False,
+                                                                    'Población':':,','PC_TOTAL':":,€" },
+                                       )
+
+
+        elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+
+            df = df_final_pob
+            df['Población']=df['Población 2018']
+            df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , 0) , axis=1)
+
+            #CANARIAAAAAAAAAAAAAAAS
+            lat=CCAA_CO.loc[CCAA_CO['CCAA']==CCAA_types,'LAT'].to_list()
+            lon=CCAA_CO.loc[CCAA_CO['CCAA']==CCAA_types,'LON'].to_list()
+            lat=lat[0]
+            lon=lon[0]
+
+
+            fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='PC_TOTAL' ,
+                                       color_continuous_scale="haline" ,
+                                       # range_color=(300,3000),
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=6 , center={"lat": lat , "lon": lon} ,
+                                       opacity=0.5 , labels={'PC_TOTAL': 'Coste por habitante'} ,
+                                       hover_name='Nombre Ente Principal' ,
+                                       hover_data={'codigo_geo': False  , 'Población':':,','PC_TOTAL': ":,€"} )
+
+
+
+
+
+
+
+
+        token = 'pk.eyJ1IjoiY2FycGllcm8iLCJhIjoiY2tmdXhxdnl2MWIxaDJ5bXpsb2dteW02dyJ9.Ory0CKJI2j7xMiviRyObJg'
+        # fig.update_layout(mapbox_style="mapbox://styles/carpiero/ckg0zxgw42pa119ofckmup850" , mapbox_accesstoken=token)
+        fig.update_layout(coloraxis_colorbar=dict(title_font_size=15,
+            thicknessmode="pixels" , thickness=20 ,
+            lenmode="pixels" , len=350 , bgcolor='#f9f9f9',tickformat="n:, €/h",
+                    ))
+
+        fig.update_layout(margin={"r": 20 , "t": 20 , "l": 20 , "b": 20})
+
+
+
 
 
 
     return fig
+
+
+    # if partida_de_coste_types == 'TODOS':
+    #     if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+
+    #
+    #     elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+
+    #
+    #     elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+
+    #
+    #     elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+
+
+    #
+    #     else:
+    #         cohorte = df_final_pob.loc[df_final_pob['Nombre Ente Principal'] == municipio_types , 'cohorte_pob'].unique().to_list()[0]
+    #
+    #         df = df_final_pob[['Nombre Ente Principal' , 'cohorte_pob' , 'PC_TOTAL']].loc[
+    #             (df_final_pob['cohorte_pob'] == cohorte) & (df_final_pob['PC_TOTAL'] > 1)].sort_values(by='PC_TOTAL' ,
+
+    #
+    # else:
+    #     if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+
+    #
+    #     elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+
+    #
+    #     elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+
+    #
+    #
+    #     elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+
+    #
+    #     else:
+
+
+
+
+
+
+
+
+
 
 
 
