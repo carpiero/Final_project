@@ -20,7 +20,7 @@ import plotly.graph_objects as go
 from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
 from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores_pob, \
     df_final_pob_melt_PC, df_table_c, df_table_n, df_table_p, df_n, df_c, df_p, df_count_c, df_count_c_pc, df_count_p, df_count_p_pc, \
-    counties, CCAA_CO
+    counties, CCAA_CO, PROV_CO, MUNI_CO
 
 #################  change data
 
@@ -1131,51 +1131,68 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 )
 def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_types, main_graph):
     if partida_de_coste_types == 'TODOS':
+        df = df_final_pob
+        df['Población'] = df['Población 2018']
+        df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , 0) , axis=1)
+
+        fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='PC_TOTAL' ,
+                                   color_continuous_scale="haline" ,
+                                   # range_color=(300,3000),
+                                   mapbox_style="carto-positron" ,
+                                   featureidkey="properties.f_codmun" ,
+                                   zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                   opacity=0.5 , labels={'PC_TOTAL': 'Coste por habitante'} ,
+                                   hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                    'Población': ':,' ,
+                                                                                    'PC_TOTAL': ":,€"} ,
+                                   )
+
         if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-            df=df_final_pob
-            df['Población'] = df['Población 2018']
-            df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'],0) , axis=1)
+            pass
 
-
-
-            fig = px.choropleth_mapbox(df, geojson=counties , locations='codigo_geo' , color='PC_TOTAL' ,
-                                       color_continuous_scale="haline" ,
-                                       # range_color=(300,3000),
-                                       mapbox_style="carto-positron" ,
-                                       featureidkey="properties.f_codmun" ,
-                                       zoom=4.5, center={"lat": 40.463667 , "lon": -3.74922} ,
-                                       opacity=0.5 ,labels={'PC_TOTAL':'Coste por habitante'},
-                                       hover_name='Nombre Ente Principal',hover_data={'codigo_geo':False,
-                                                                    'Población':':,','PC_TOTAL':":,€" },
-                                       )
 
 
         elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
 
-            df = df_final_pob
-            df['Población']=df['Población 2018']
-            df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , 0) , axis=1)
-
-            #CANARIAAAAAAAAAAAAAAAS
             lat=CCAA_CO.loc[CCAA_CO['CCAA']==CCAA_types,'LAT'].to_list()
             lon=CCAA_CO.loc[CCAA_CO['CCAA']==CCAA_types,'LON'].to_list()
-            lat=lat[0]
-            lon=lon[0]
+
+            if CCAA_types=='Canarias':
+                lat = 36
+                lon = -11
+            else:
+                lat=lat[0]
+                lon=lon[0]
+
+            fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon} )
 
 
-            fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='PC_TOTAL' ,
-                                       color_continuous_scale="haline" ,
-                                       # range_color=(300,3000),
-                                       mapbox_style="carto-positron" ,
-                                       featureidkey="properties.f_codmun" ,
-                                       zoom=6 , center={"lat": lat , "lon": lon} ,
-                                       opacity=0.5 , labels={'PC_TOTAL': 'Coste por habitante'} ,
-                                       hover_name='Nombre Ente Principal' ,
-                                       hover_data={'codigo_geo': False  , 'Población':':,','PC_TOTAL': ":,€"} )
+        elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
 
+            lat = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LAT'].to_list()
+            lon = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LON'].to_list()
 
+            if PROV_types == 'Santa Cruz de Tenerife' or PROV_types == 'Palmas, Las':
+                lat = 36
+                lon = -11
+            else:
+                lat = lat[0]
+                lon = lon[0]
 
+            fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon})
 
+        elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            lat = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LAT'].to_list()
+            lon = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LON'].to_list()
+
+            if PROV_types == 'Santa Cruz de Tenerife' or PROV_types == 'Palmas, Las':
+                lat = 36
+                lon = -11
+            else:
+                lat = lat[0]
+                lon = lon[0]
+
+            fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon})
 
 
 
@@ -1197,14 +1214,7 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
     return fig
 
 
-    # if partida_de_coste_types == 'TODOS':
-    #     if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
 
-    #
-    #     elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-
-    #
-    #     elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
 
     #
     #     elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':

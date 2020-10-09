@@ -83,12 +83,12 @@ df_count_p_pc['Provincia'] = df_count_p_pc['Provincia'].astype('object')
 
 import json
 
-with open('../data/raw/shapefiles_espana_municipios.geojson') as response:
+with open('../data/processed/shapefiles_espana_municipios.geojson') as response:
     counties = json.load(response)
 
 CCAA_CO = pd.read_parquet('../data/processed/CCAA_CO.parquet')
-
-
+PROV_CO = pd.read_parquet('../data/processed/PROV_CO.parquet')
+MUNI_CO = pd.read_parquet('../data/processed/MUNI_CO.parquet')
 
 
 
