@@ -1109,7 +1109,7 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 
                           legend=dict(
                               x=0.50 ,
-                              y=0.8 ,
+                              y=0.9 ,
                               bgcolor='rgba(255, 255, 255, 0)' ,
                               bordercolor='rgba(255, 255, 255, 0)',
                               font_size=14
@@ -1137,7 +1137,7 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
         fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='PC_TOTAL' ,
                                    color_continuous_scale="haline" ,
-                                   # range_color=(300,3000),
+                                   range_color=(300,3000),
                                    mapbox_style="carto-positron" ,
                                    featureidkey="properties.f_codmun" ,
                                    zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
@@ -1175,17 +1175,75 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
             if PROV_types == 'Santa Cruz de Tenerife' or PROV_types == 'Palmas, Las':
                 lat = 36
                 lon = -11
+                fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon})
             else:
                 lat = lat[0]
                 lon = lon[0]
 
-            fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon})
+                fig.update_layout(mapbox_zoom=7 , mapbox_center={"lat": lat , "lon": lon})
 
         elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
             lat = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LAT'].to_list()
             lon = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LON'].to_list()
 
             if PROV_types == 'Santa Cruz de Tenerife' or PROV_types == 'Palmas, Las':
+                lat = 36
+                lon = -11
+                fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon})
+
+            else:
+                lat = lat[0]
+                lon = lon[0]
+
+                fig.update_layout(mapbox_zoom=7 , mapbox_center={"lat": lat , "lon": lon})
+
+        else:
+            lat = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'LAT'].to_list()
+            lon = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types, 'LON'].to_list()
+
+            PROV=MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'Provincia'].to_list()
+            PROV = PROV[0]
+
+            if PROV == 'Santa Cruz de Tenerife' or PROV == 'Palmas, Las':
+                lat = 36
+                lon = -11
+                fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon})
+
+            else:
+                lat = lat[0]
+                lon = lon[0]
+
+                fig.update_layout(mapbox_zoom=9 , mapbox_center={"lat": lat , "lon": lon})
+
+
+    else:
+        df = df_final_pob_melt_PC
+        df['coste_efectivo_PC'] = df.apply(lambda new: round(new['coste_efectivo_PC'] , 0) , axis=1)
+        df= df.loc[(df['Descripción']==partida_de_coste_types)& (df['coste_efectivo_PC'] >= 1)]
+
+
+        fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='coste_efectivo_PC' ,
+                                   color_continuous_scale="haline" ,
+                                   # range_color=(300 , 3000) ,
+                                   mapbox_style="carto-positron" ,
+                                   featureidkey="properties.f_codmun" ,
+                                   zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                   opacity=0.5 , labels={'coste_efectivo_PC': f'Coste por Habitante, {partida_de_coste_types}'} ,
+                                   hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                    'coste_efectivo_PC': ":,€"} ,
+                                   )
+
+
+        if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            pass
+
+
+        elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+
+            lat = CCAA_CO.loc[CCAA_CO['CCAA'] == CCAA_types , 'LAT'].to_list()
+            lon = CCAA_CO.loc[CCAA_CO['CCAA'] == CCAA_types , 'LON'].to_list()
+
+            if CCAA_types == 'Canarias':
                 lat = 36
                 lon = -11
             else:
@@ -1196,16 +1254,75 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
 
 
+        elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            lat = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LAT'].to_list()
+            lon = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LON'].to_list()
 
-        token = 'pk.eyJ1IjoiY2FycGllcm8iLCJhIjoiY2tmdXhxdnl2MWIxaDJ5bXpsb2dteW02dyJ9.Ory0CKJI2j7xMiviRyObJg'
-        # fig.update_layout(mapbox_style="mapbox://styles/carpiero/ckg0zxgw42pa119ofckmup850" , mapbox_accesstoken=token)
-        fig.update_layout(coloraxis_colorbar=dict(title_font_size=15,
-            thicknessmode="pixels" , thickness=20 ,
-            lenmode="pixels" , len=350 , bgcolor='#f9f9f9',tickformat="n:, €/h",
-                    ))
+            if PROV_types == 'Santa Cruz de Tenerife' or PROV_types == 'Palmas, Las':
+                lat = 36
+                lon = -11
+                fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon})
+            else:
+                lat = lat[0]
+                lon = lon[0]
 
-        fig.update_layout(margin={"r": 20 , "t": 20 , "l": 20 , "b": 20})
+                fig.update_layout(mapbox_zoom=7 , mapbox_center={"lat": lat , "lon": lon})
 
+
+
+        elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            lat = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LAT'].to_list()
+            lon = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LON'].to_list()
+
+            if PROV_types == 'Santa Cruz de Tenerife' or PROV_types == 'Palmas, Las':
+                lat = 36
+                lon = -11
+                fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon})
+            else:
+                lat = lat[0]
+                lon = lon[0]
+
+                fig.update_layout(mapbox_zoom=7 , mapbox_center={"lat": lat , "lon": lon})
+
+
+
+        else:
+            lat = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'LAT'].to_list()
+            lon = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'LON'].to_list()
+
+            PROV = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'Provincia'].to_list()
+            PROV = PROV[0]
+
+            if PROV == 'Santa Cruz de Tenerife' or PROV == 'Palmas, Las':
+                lat = 36
+                lon = -11
+                fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon})
+
+            else:
+                lat = lat[0]
+                lon = lon[0]
+
+                fig.update_layout(mapbox_zoom=9 , mapbox_center={"lat": lat , "lon": lon})
+
+
+
+
+
+
+
+    token = 'pk.eyJ1IjoiY2FycGllcm8iLCJhIjoiY2tmdXhxdnl2MWIxaDJ5bXpsb2dteW02dyJ9.Ory0CKJI2j7xMiviRyObJg'
+    # fig.update_layout(mapbox_style="mapbox://styles/carpiero/ckg0zxgw42pa119ofckmup850" , mapbox_accesstoken=token)
+    fig.update_layout(coloraxis_colorbar=dict(title='',title_font_size=15,
+        thicknessmode="pixels" , thickness=20 ,
+        lenmode="pixels" , len=350 , bgcolor='#f9f9f9',tickformat="n:, €/h",
+                ))
+
+    fig.update_layout(margin={"r": 20 , "t": 40 , "l": 20 , "b": 20})
+    if partida_de_coste_types == 'TODOS':
+        fig.update_layout(title=f'Coste por Habitante Total' )
+
+    else:
+        fig.update_layout(title=f'Coste por Habitante, {partida_de_coste_types}')
 
 
 
@@ -1216,33 +1333,6 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
 
 
-    #
-    #     elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
-
-
-    #
-    #     else:
-    #         cohorte = df_final_pob.loc[df_final_pob['Nombre Ente Principal'] == municipio_types , 'cohorte_pob'].unique().to_list()[0]
-    #
-    #         df = df_final_pob[['Nombre Ente Principal' , 'cohorte_pob' , 'PC_TOTAL']].loc[
-    #             (df_final_pob['cohorte_pob'] == cohorte) & (df_final_pob['PC_TOTAL'] > 1)].sort_values(by='PC_TOTAL' ,
-
-    #
-    # else:
-    #     if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-
-    #
-    #     elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-
-    #
-    #     elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
-
-    #
-    #
-    #     elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
-
-    #
-    #     else:
 
 
 
