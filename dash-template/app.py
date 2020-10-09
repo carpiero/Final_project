@@ -104,20 +104,20 @@ app.layout = html.Div(
         html.Div(id="output-clientside"),
         html.Div(
             [
-                html.Div(
-                    [
-                        # html.Img(
-                        #     src=app.get_asset_url("dash-logo.png"),
-                        #     id="plotly-image",
-                        #     style={
-                        #         "height": "60px",
-                        #         "width": "auto",
-                        #         "margin-bottom": "25px",
-                        #     },
-                        # )
-                    ],
-                    className="one-third column",
-                ),
+                # html.Div(
+                #     # [
+                #     #     html.Img(
+                #     #         src=app.get_asset_url("dash-logo.png"),
+                #     #         id="plotly-image",
+                #     #         style={
+                #     #             "height": "60px",
+                #     #             "width": "auto",
+                #     #             "margin-bottom": "25px",
+                #     #         },
+                #     #     )
+                #     # ],
+                #     # className="one-third column",
+                # ),
                 html.Div(
                     [
                         html.Div(
@@ -248,7 +248,7 @@ app.layout = html.Div(
             [
                 html.Div(
                     [dcc.Graph(id="map_graph")],
-                    className="pretty_container seven columns",style={'height': '600px'},
+                    className="pretty_container seven columns",style={'min-height': '680px'},
                 )
             ],
             className="row flex-display",
@@ -1224,6 +1224,7 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
         fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='coste_efectivo_PC' ,
                                    color_continuous_scale="haline" ,
+
                                    # range_color=(300 , 3000) ,
                                    mapbox_style="carto-positron" ,
                                    featureidkey="properties.f_codmun" ,

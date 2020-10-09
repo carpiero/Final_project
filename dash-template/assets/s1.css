@@ -244,7 +244,7 @@ h5 {
   margin-top: 0.6rem;
 }
 h6 {
-  font-size: 1.75rem;
+  font-size: 1.50rem;
   line-height: 1.6;
   letter-spacing: 0;
   margin-bottom: 0.75rem;
@@ -252,8 +252,16 @@ h6 {
 }
 
 p {
+ font-size: 1.70rem;
   margin-top: 0;
 }
+
+.mini_container p {
+ font-size: 1.50rem;
+  margin-top: 0;
+}
+
+
 
 /* Blockquotes
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
@@ -615,11 +623,16 @@ there.
     font-size: 2rem;
   }
   h6 {
-    font-size: 1.25rem;
+    font-size: 1.20rem;
   }
   p {
     font-size: 11px;
   }
+  .mini_container p {
+ font-size: 1.20rem;
+  margin-top: 0;
+}
+
 }
 
 /* Larger than desktop */

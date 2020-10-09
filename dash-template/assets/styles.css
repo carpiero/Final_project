@@ -79,9 +79,11 @@ body {
 }
 
 #header {
-  align-items: center;
+  display: flex;
 }
 
+
+##############################################################
 #learn-more-button {
   text-align: center;
   height: 100%;
@@ -103,7 +105,7 @@ body {
   padding: 15px;
   position: relative;
   box-shadow: 2px 2px 2px lightgrey;
-  height: 55px ; ###################################################
+
 }
 
 #right-column {
@@ -146,8 +148,10 @@ body {
   transform: translate(30px, 349px);
 }
 
+
 #map_graph {
   position: absolute;
   height: calc(100% - 30px);
   width: calc(100% - 30px);
 }
+
