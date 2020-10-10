@@ -1,5 +1,7 @@
 # Import required libraries
 import pickle
+import geopandas
+import json
 import plotly.figure_factory as ff
 import copy
 import pathlib
@@ -17,10 +19,10 @@ import locale
 import plotly.graph_objects as go
 
 # Multi-dropdown options
-from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
+# from controls import COUNTIES, WELL_STATUSES, WELL_TYPES, WELL_COLORS
 from controls import  CCAA_dict, PROV,  MUNICIPIOS, PDC, df_final_pob_melt, df_final_pob, df_indicadores_pob, \
     df_final_pob_melt_PC, df_table_c, df_table_n, df_table_p, df_n, df_c, df_p, df_count_c, df_count_c_pc, df_count_p, df_count_p_pc, \
-    counties, CCAA_CO, PROV_CO, MUNI_CO
+    counties, CCAA_CO, PROV_CO, MUNI_CO, df_zoom_pob
 
 #################  change data
 
@@ -49,19 +51,19 @@ pdc_type_options = [{"label": PDC[x], "value": x} for x in PDC ]
 locale.setlocale(locale.LC_ALL, '')
 
 #####################################################3
-county_options = [
-    {"label": str(COUNTIES[county]), "value": str(county)} for county in COUNTIES
-]
+# county_options = [
+#     {"label": str(COUNTIES[county]), "value": str(county)} for county in COUNTIES
+# ]
 
-well_status_options = [
-    {"label": str(WELL_STATUSES[well_status]), "value": str(well_status)}
-    for well_status in WELL_STATUSES
-]
-
-well_type_options = [
-    {"label": str(WELL_TYPES[well_type]), "value": str(well_type)}
-    for well_type in WELL_TYPES
-]
+# well_status_options = [
+#     {"label": str(WELL_STATUSES[well_status]), "value": str(well_status)}
+#     for well_status in WELL_STATUSES
+# ]
+#
+# well_type_options = [
+#     {"label": str(WELL_TYPES[well_type]), "value": str(well_type)}
+#     for well_type in WELL_TYPES
+# ]
 
 
 # Load data
@@ -77,24 +79,24 @@ points = pickle.load(open(DATA_PATH.joinpath("points.pkl"), "rb"))
 
 
 # Create global chart template
-mapbox_access_token = "pk.eyJ1IjoicGxvdGx5bWFwYm94IiwiYSI6ImNrOWJqb2F4djBnMjEzbG50amg0dnJieG4ifQ.Zme1-Uzoi75IaFbieBDl3A"
-
-layout = dict(
-    autosize=True,
-    automargin=True,
-    margin=dict(l=30, r=30, b=20, t=40),
-    hovermode="closest",
-    plot_bgcolor="#F9F9F9",
-    paper_bgcolor="#F9F9F9",
-    legend=dict(font=dict(size=10), orientation="h"),
-    title="Satellite Overview",
-    mapbox=dict(
-        accesstoken=mapbox_access_token,
-        style="light",
-        center=dict(lon=-78.05, lat=42.54),
-        zoom=7,
-    ),
-)
+# mapbox_access_token = "pk.eyJ1IjoicGxvdGx5bWFwYm94IiwiYSI6ImNrOWJqb2F4djBnMjEzbG50amg0dnJieG4ifQ.Zme1-Uzoi75IaFbieBDl3A"
+#
+# layout = dict(
+#     autosize=True,
+#     automargin=True,
+#     margin=dict(l=30, r=30, b=20, t=40),
+#     hovermode="closest",
+#     plot_bgcolor="#F9F9F9",
+#     paper_bgcolor="#F9F9F9",
+#     legend=dict(font=dict(size=10), orientation="h"),
+#     title="Satellite Overview",
+#     mapbox=dict(
+#         accesstoken=mapbox_access_token,
+#         style="light",
+#         center=dict(lon=-78.05, lat=42.54),
+#         zoom=7,
+#     ),
+# )
 
 # Create app layout
 app.layout = html.Div(
@@ -222,7 +224,7 @@ app.layout = html.Div(
                         html.Div(
                             [dcc.Graph(id="count_graph",config = {'displayModeBar': False})],
                             id="countGraphContainer",
-                            className="pretty_container",
+                            className="pretty_container",style={'min-height': '280px'},
                         ),
                     ],
                     id="right-column",
@@ -1131,28 +1133,90 @@ def make_individual_figure(CCAA_types, PROV_types,municipio_types, main_graph):
 )
 def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_types, main_graph):
     if partida_de_coste_types == 'TODOS':
-        df = df_final_pob
-        df['Población'] = df['Población 2018']
-        df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , 0) , axis=1)
-
-        fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='PC_TOTAL' ,
-                                   color_continuous_scale="haline" ,
-                                   range_color=(300,3000),
-                                   mapbox_style="carto-positron" ,
-                                   featureidkey="properties.f_codmun" ,
-                                   zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
-                                   opacity=0.5 , labels={'PC_TOTAL': 'Coste por habitante'} ,
-                                   hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
-                                                                                    'Población': ':,' ,
-                                                                                    'PC_TOTAL': ":,€"} ,
-                                   )
+        # df = df_final_pob
+        # df['Población'] = df['Población 2018']
+        # df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , 0) , axis=1)
+        # q9=df['PC_TOTAL'].quantile(0.90)
+        # q1 = df['PC_TOTAL'].quantile(0.10)
+        # max=df['PC_TOTAL'].max()
+        # min=df['PC_TOTAL'].min()
+        # median=df['PC_TOTAL'].median()
+        #
+        # fig = px.choropleth_mapbox(df , geojson=COUNTIES , locations='codigo_geo' , color='PC_TOTAL' ,
+        #                            color_continuous_scale="RdBU" ,
+        #                            range_color=(q1,q9),
+        #                            mapbox_style="carto-positron" ,
+        #                            featureidkey="properties.f_codmun" ,
+        #                            zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+        #                            opacity=0.5 , labels={'PC_TOTAL': 'Coste por habitante'} ,
+        #                            hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+        #                                                                             'Población': ':,' ,
+        #                                                                             'PC_TOTAL': ":,€"} ,
+        #                            )
+        #
+        #
+        # fig.update_layout(coloraxis_colorbar=dict(tickmode='array', tickvals=[q1, (q9+q1)/2 , q9] ,
+        #                                           ticktext=[min,median,max]))
 
         if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-            pass
+            df = df_final_pob
+            df['Población'] = df['Población 2018']
+            df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , 0) , axis=1)
+            q9 = df['PC_TOTAL'].quantile(0.90)
+            q1 = df['PC_TOTAL'].quantile(0.10)
+            max = df['PC_TOTAL'].max()
+            min = df['PC_TOTAL'].min()
+            median = df['PC_TOTAL'].median()
+
+            fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='PC_TOTAL' ,
+                                       color_continuous_scale="RdBU" ,
+                                       range_color=(q1 , q9) ,
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                       opacity=0.5 , labels={'PC_TOTAL': 'Coste por habitante'} ,
+                                       hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                        'Población': ':,' ,
+                                                                                        'PC_TOTAL': ":,€"} ,
+                                       )
+
+            fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+                                                      ticktext=[min , median , max]))
+
 
 
 
         elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            df = df_final_pob.loc[df_final_pob['CCAA']==CCAA_types]
+            df['Población'] = df['Población 2018']
+            df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , 0) , axis=1)
+            q9 = df['PC_TOTAL'].quantile(0.90)
+            q1 = df['PC_TOTAL'].quantile(0.10)
+            max = df['PC_TOTAL'].max()
+            min = df['PC_TOTAL'].min()
+            median = df['PC_TOTAL'].median()
+            df_zoom_po=df_zoom_pob
+            df_zoom_po=df_zoom_po[df_zoom_po['CCAA']==CCAA_types]
+            df_zoom_po.to_file('../data/processed/shapefiles_espana_municipiosCCAA.geojson' , driver='GeoJSON')
+            with open('../data/processed/shapefiles_espana_municipiosCCAA.geojson') as response:
+                countiesCCAA = json.load(response)
+
+
+            fig = px.choropleth_mapbox(df , geojson=countiesCCAA , locations='codigo_geo' , color='PC_TOTAL' ,
+                                       color_continuous_scale="RdBU" ,
+                                       range_color=(q1 , q9) ,
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                       opacity=0.5 , labels={'PC_TOTAL': 'Coste por habitante'} ,
+                                       hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                        'Población': ':,' ,
+                                                                                        'PC_TOTAL': ":,€"} ,
+                                       )
+
+            fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+                                                      ticktext=[min , median , max]))
+
 
             lat=CCAA_CO.loc[CCAA_CO['CCAA']==CCAA_types,'LAT'].to_list()
             lon=CCAA_CO.loc[CCAA_CO['CCAA']==CCAA_types,'LON'].to_list()
@@ -1164,10 +1228,49 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
                 lat=lat[0]
                 lon=lon[0]
 
-            fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon} )
+
+            fig.update_layout(mapbox_zoom=6 , mapbox_center={"lat": lat , "lon": lon},)
 
 
         elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+
+            df = df_final_pob.loc[df_final_pob['Provincia'] == PROV_types]
+            df['Población'] = df['Población 2018']
+            df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , 0) , axis=1)
+            q9 = df['PC_TOTAL'].quantile(0.90)
+            q1 = df['PC_TOTAL'].quantile(0.10)
+            max = df['PC_TOTAL'].max()
+            min = df['PC_TOTAL'].min()
+            median = df['PC_TOTAL'].median()
+            df_zoom_po = df_zoom_pob
+            df_zoom_po = df_zoom_po[df_zoom_po['Provincia'] == PROV_types]
+            df_zoom_po.to_file('../data/processed/shapefiles_espana_municipiosPROV.geojson' , driver='GeoJSON')
+            with open('../data/processed/shapefiles_espana_municipiosPROV.geojson') as response:
+                countiesPROV = json.load(response)
+
+            fig = px.choropleth_mapbox(df , geojson=countiesPROV , locations='codigo_geo' , color='PC_TOTAL' ,
+                                       color_continuous_scale="RdBU" ,
+                                       range_color=(q1 , q9) ,
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                       opacity=0.5 , labels={'PC_TOTAL': 'Coste por habitante'} ,
+                                       hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                        'Población': ':,' ,
+                                                                                        'PC_TOTAL': ":,€"} ,
+                                       )
+
+            fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+                                                      ticktext=[min , median , max]))
+
+
+
+
+
+
+
+
+
 
             lat = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LAT'].to_list()
             lon = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LON'].to_list()
@@ -1183,6 +1286,36 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
                 fig.update_layout(mapbox_zoom=7 , mapbox_center={"lat": lat , "lon": lon})
 
         elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            df = df_final_pob.loc[df_final_pob['Provincia'] == PROV_types]
+            df['Población'] = df['Población 2018']
+            df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , 0) , axis=1)
+            q9 = df['PC_TOTAL'].quantile(0.90)
+            q1 = df['PC_TOTAL'].quantile(0.10)
+            max = df['PC_TOTAL'].max()
+            min = df['PC_TOTAL'].min()
+            median = df['PC_TOTAL'].median()
+            df_zoom_po = df_zoom_pob
+            df_zoom_po = df_zoom_po[df_zoom_po['Provincia'] == PROV_types]
+            df_zoom_po.to_file('../data/processed/shapefiles_espana_municipiosPROV.geojson' , driver='GeoJSON')
+            with open('../data/processed/shapefiles_espana_municipiosPROV.geojson') as response:
+                countiesPROV = json.load(response)
+
+            fig = px.choropleth_mapbox(df , geojson=countiesPROV , locations='codigo_geo' , color='PC_TOTAL' ,
+                                       color_continuous_scale="RdBU" ,
+                                       range_color=(q1 , q9) ,
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                       opacity=0.5 , labels={'PC_TOTAL': 'Coste por habitante'} ,
+                                       hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                        'Población': ':,' ,
+                                                                                        'PC_TOTAL': ":,€"} ,
+                                       )
+
+            fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+                                                      ticktext=[min , median , max]))
+
+
             lat = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LAT'].to_list()
             lon = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LON'].to_list()
 
@@ -1198,11 +1331,47 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
                 fig.update_layout(mapbox_zoom=7 , mapbox_center={"lat": lat , "lon": lon})
 
         else:
+            PROV = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'Provincia'].to_list()
+            PROV = PROV[0]
+            df = df_final_pob.loc[df_final_pob['Provincia'] == PROV]
+            df['Población'] = df['Población 2018']
+            df['PC_TOTAL'] = df.apply(lambda new: round(new['PC_TOTAL'] , 0) , axis=1)
+            q9 = df['PC_TOTAL'].quantile(0.90)
+            q1 = df['PC_TOTAL'].quantile(0.10)
+            max = df['PC_TOTAL'].max()
+            min = df['PC_TOTAL'].min()
+            median = df['PC_TOTAL'].median()
+            df_zoom_po = df_zoom_pob
+            df_zoom_po = df_zoom_po[df_zoom_po['Provincia'] == PROV]
+            df_zoom_po.to_file('../data/processed/shapefiles_espana_municipiosPROV.geojson' , driver='GeoJSON')
+            with open('../data/processed/shapefiles_espana_municipiosPROV.geojson') as response:
+                countiesPROV = json.load(response)
+
+            fig = px.choropleth_mapbox(df , geojson=countiesPROV , locations='codigo_geo' , color='PC_TOTAL' ,
+                                       color_continuous_scale="RdBU" ,
+                                       range_color=(q1 , q9) ,
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                       opacity=0.5 , labels={'PC_TOTAL': 'Coste por habitante'} ,
+                                       hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                        'Población': ':,' ,
+                                                                                        'PC_TOTAL': ":,€"} ,
+                                       )
+
+            fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+                                                      ticktext=[min , median , max]))
+
+
+
+
+
+
             lat = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'LAT'].to_list()
             lon = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types, 'LON'].to_list()
 
-            PROV=MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'Provincia'].to_list()
-            PROV = PROV[0]
+            # PROV=MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'Provincia'].to_list()
+            # PROV = PROV[0]
 
             if PROV == 'Santa Cruz de Tenerife' or PROV == 'Palmas, Las':
                 lat = 36
@@ -1217,29 +1386,90 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
 
     else:
-        df = df_final_pob_melt_PC
-        df['coste_efectivo_PC'] = df.apply(lambda new: round(new['coste_efectivo_PC'] , 0) , axis=1)
-        df= df.loc[(df['Descripción']==partida_de_coste_types)& (df['coste_efectivo_PC'] >= 1)]
-
-
-        fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='coste_efectivo_PC' ,
-                                   color_continuous_scale="haline" ,
-
-                                   # range_color=(300 , 3000) ,
-                                   mapbox_style="carto-positron" ,
-                                   featureidkey="properties.f_codmun" ,
-                                   zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
-                                   opacity=0.5 , labels={'coste_efectivo_PC': f'Coste por Habitante, {partida_de_coste_types}'} ,
-                                   hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
-                                                                                    'coste_efectivo_PC': ":,€"} ,
-                                   )
-
+        # df = df_final_pob_melt_PC
+        # df['coste_efectivo_PC'] = df.apply(lambda new: round(new['coste_efectivo_PC'] , 0) , axis=1)
+        # df= df.loc[(df['Descripción']==partida_de_coste_types)& (df['coste_efectivo_PC'] >= 1)]
+        # q9 = df['coste_efectivo_PC'].quantile(0.90)
+        # q1 = df['coste_efectivo_PC'].quantile(0.10)
+        # max = df['coste_efectivo_PC'].max()
+        # min = df['coste_efectivo_PC'].min()
+        # median = df['coste_efectivo_PC'].median()
+        #
+        #
+        #
+        # fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='coste_efectivo_PC' ,
+        #                            color_continuous_scale="haline" ,
+        #                            range_color=(q1 , q9) ,
+        #                            mapbox_style="carto-positron" ,
+        #                            featureidkey="properties.f_codmun" ,
+        #                            zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+        #                            opacity=0.5 , labels={'coste_efectivo_PC': f'Coste por Habitante, {partida_de_coste_types}'} ,
+        #                            hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+        #                                                                             'coste_efectivo_PC': ":,€"} ,
+        #                            )
+        #
+        # fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+        #                                           ticktext=[min , median , max]))
 
         if CCAA_types == 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
-            pass
+            df = df_final_pob_melt_PC
+            df['coste_efectivo_PC'] = df.apply(lambda new: round(new['coste_efectivo_PC'] , 0) , axis=1)
+            df= df.loc[(df['Descripción']==partida_de_coste_types)& (df['coste_efectivo_PC'] >= 1)]
+            q9 = df['coste_efectivo_PC'].quantile(0.90)
+            q1 = df['coste_efectivo_PC'].quantile(0.10)
+            max = df['coste_efectivo_PC'].max()
+            min = df['coste_efectivo_PC'].min()
+            median = df['coste_efectivo_PC'].median()
+
+
+
+            fig = px.choropleth_mapbox(df , geojson=counties , locations='codigo_geo' , color='coste_efectivo_PC' ,
+                                       color_continuous_scale="haline" ,
+                                       range_color=(q1 , q9) ,
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                       opacity=0.5 , labels={'coste_efectivo_PC': f'Coste por Habitante, {partida_de_coste_types}'} ,
+                                       hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                        'coste_efectivo_PC': ":,€"} ,
+                                       )
+
+            fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+                                                      ticktext=[min , median , max]))
+
 
 
         elif CCAA_types != 'TODAS' and PROV_types == 'TODAS' and municipio_types == 'TODOS':
+            df = df_final_pob_melt_PC[df_final_pob_melt_PC['CCAA']==CCAA_types]
+            df['coste_efectivo_PC'] = df.apply(lambda new: round(new['coste_efectivo_PC'] , 0) , axis=1)
+            df = df.loc[(df['Descripción'] == partida_de_coste_types) & (df['coste_efectivo_PC'] >= 1)]
+            q9 = df['coste_efectivo_PC'].quantile(0.90)
+            q1 = df['coste_efectivo_PC'].quantile(0.10)
+            max = df['coste_efectivo_PC'].max()
+            min = df['coste_efectivo_PC'].min()
+            median = df['coste_efectivo_PC'].median()
+            df_zoom_po = df_zoom_pob
+            df_zoom_po = df_zoom_po[df_zoom_po['CCAA'] == CCAA_types]
+            df_zoom_po.to_file('../data/processed/shapefiles_espana_municipiosCCAA.geojson' , driver='GeoJSON')
+            with open('../data/processed/shapefiles_espana_municipiosCCAA.geojson') as response:
+                countiesCCAA = json.load(response)
+
+            fig = px.choropleth_mapbox(df , geojson=countiesCCAA , locations='codigo_geo' , color='coste_efectivo_PC' ,
+                                       color_continuous_scale="haline" ,
+                                       range_color=(q1 , q9) ,
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                       opacity=0.5 ,
+                                       labels={'coste_efectivo_PC': f'Coste por Habitante, {partida_de_coste_types}'} ,
+                                       hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                        'coste_efectivo_PC': ":,€"} ,
+                                       )
+
+            fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+                                                      ticktext=[min , median , max]))
+
+
 
             lat = CCAA_CO.loc[CCAA_CO['CCAA'] == CCAA_types , 'LAT'].to_list()
             lon = CCAA_CO.loc[CCAA_CO['CCAA'] == CCAA_types , 'LON'].to_list()
@@ -1256,6 +1486,37 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
 
         elif CCAA_types != 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+
+            df = df_final_pob_melt_PC[df_final_pob_melt_PC['Provincia'] == PROV_types]
+            df['coste_efectivo_PC'] = df.apply(lambda new: round(new['coste_efectivo_PC'] , 0) , axis=1)
+            df = df.loc[(df['Descripción'] == partida_de_coste_types) & (df['coste_efectivo_PC'] >= 1)]
+            q9 = df['coste_efectivo_PC'].quantile(0.90)
+            q1 = df['coste_efectivo_PC'].quantile(0.10)
+            max = df['coste_efectivo_PC'].max()
+            min = df['coste_efectivo_PC'].min()
+            median = df['coste_efectivo_PC'].median()
+            df_zoom_po = df_zoom_pob
+            df_zoom_po = df_zoom_po[df_zoom_po['Provincia'] == PROV_types]
+            df_zoom_po.to_file('../data/processed/shapefiles_espana_municipiosPROV.geojson' , driver='GeoJSON')
+            with open('../data/processed/shapefiles_espana_municipiosPROV.geojson') as response:
+                countiesPROV = json.load(response)
+
+            fig = px.choropleth_mapbox(df , geojson=countiesPROV , locations='codigo_geo' , color='coste_efectivo_PC' ,
+                                       color_continuous_scale="haline" ,
+                                       range_color=(q1 , q9) ,
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                       opacity=0.5 ,
+                                       labels={'coste_efectivo_PC': f'Coste por Habitante, {partida_de_coste_types}'} ,
+                                       hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                        'coste_efectivo_PC': ":,€"} ,
+                                       )
+
+            fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+                                                      ticktext=[min , median , max]))
+
+
             lat = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LAT'].to_list()
             lon = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LON'].to_list()
 
@@ -1272,6 +1533,35 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
 
         elif CCAA_types == 'TODAS' and PROV_types != 'TODAS' and municipio_types == 'TODOS':
+            df = df_final_pob_melt_PC[df_final_pob_melt_PC['Provincia'] == PROV_types]
+            df['coste_efectivo_PC'] = df.apply(lambda new: round(new['coste_efectivo_PC'] , 0) , axis=1)
+            df = df.loc[(df['Descripción'] == partida_de_coste_types) & (df['coste_efectivo_PC'] >= 1)]
+            q9 = df['coste_efectivo_PC'].quantile(0.90)
+            q1 = df['coste_efectivo_PC'].quantile(0.10)
+            max = df['coste_efectivo_PC'].max()
+            min = df['coste_efectivo_PC'].min()
+            median = df['coste_efectivo_PC'].median()
+            df_zoom_po = df_zoom_pob
+            df_zoom_po = df_zoom_po[df_zoom_po['Provincia'] == PROV_types]
+            df_zoom_po.to_file('../data/processed/shapefiles_espana_municipiosPROV.geojson' , driver='GeoJSON')
+            with open('../data/processed/shapefiles_espana_municipiosPROV.geojson') as response:
+                countiesPROV = json.load(response)
+
+            fig = px.choropleth_mapbox(df , geojson=countiesPROV , locations='codigo_geo' , color='coste_efectivo_PC' ,
+                                       color_continuous_scale="haline" ,
+                                       range_color=(q1 , q9) ,
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                       opacity=0.5 ,
+                                       labels={'coste_efectivo_PC': f'Coste por Habitante, {partida_de_coste_types}'} ,
+                                       hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                        'coste_efectivo_PC': ":,€"} ,
+                                       )
+
+            fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+                                                      ticktext=[min , median , max]))
+
             lat = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LAT'].to_list()
             lon = PROV_CO.loc[PROV_CO['Provincia'] == PROV_types , 'LON'].to_list()
 
@@ -1288,11 +1578,42 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
 
         else:
+            PROV = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'Provincia'].to_list()
+            PROV = PROV[0]
+            df = df_final_pob_melt_PC[df_final_pob_melt_PC['Provincia'] == PROV]
+            df['coste_efectivo_PC'] = df.apply(lambda new: round(new['coste_efectivo_PC'] , 0) , axis=1)
+            df = df.loc[(df['Descripción'] == partida_de_coste_types) & (df['coste_efectivo_PC'] >= 1)]
+            q9 = df['coste_efectivo_PC'].quantile(0.90)
+            q1 = df['coste_efectivo_PC'].quantile(0.10)
+            max = df['coste_efectivo_PC'].max()
+            min = df['coste_efectivo_PC'].min()
+            median = df['coste_efectivo_PC'].median()
+            df_zoom_po = df_zoom_pob
+            df_zoom_po = df_zoom_po[df_zoom_po['Provincia'] == PROV]
+            df_zoom_po.to_file('../data/processed/shapefiles_espana_municipiosPROV.geojson' , driver='GeoJSON')
+            with open('../data/processed/shapefiles_espana_municipiosPROV.geojson') as response:
+                countiesPROV = json.load(response)
+
+            fig = px.choropleth_mapbox(df , geojson=countiesPROV , locations='codigo_geo' , color='coste_efectivo_PC' ,
+                                       color_continuous_scale="haline" ,
+                                       range_color=(q1 , q9) ,
+                                       mapbox_style="carto-positron" ,
+                                       featureidkey="properties.f_codmun" ,
+                                       zoom=4.5 , center={"lat": 39.8 , "lon": -4.3} ,
+                                       opacity=0.5 ,
+                                       labels={'coste_efectivo_PC': f'Coste por Habitante, {partida_de_coste_types}'} ,
+                                       hover_name='Nombre Ente Principal' , hover_data={'codigo_geo': False ,
+                                                                                        'coste_efectivo_PC': ":,€"} ,
+                                       )
+
+            fig.update_layout(coloraxis_colorbar=dict(tickmode='array' , tickvals=[q1 , (q9 + q1) / 2 , q9] ,
+                                                      ticktext=[min , median , max]))
+
             lat = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'LAT'].to_list()
             lon = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'LON'].to_list()
 
-            PROV = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'Provincia'].to_list()
-            PROV = PROV[0]
+            # PROV = MUNI_CO.loc[MUNI_CO['Nombre Ente Principal'] == municipio_types , 'Provincia'].to_list()
+            # PROV = PROV[0]
 
             if PROV == 'Santa Cruz de Tenerife' or PROV == 'Palmas, Las':
                 lat = 36
@@ -1305,18 +1626,24 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
                 fig.update_layout(mapbox_zoom=9 , mapbox_center={"lat": lat , "lon": lon})
 
-
-
-
-
+    # [[0.0 , "rgb(165,0,38)"] ,
+    #  [0.1111111111111111 , "rgb(215,48,39)"] ,
+    #  [0.2222222222222222 , "rgb(244,109,67)"] ,
+    #  [0.3333333333333333 , "rgb(253,174,97)"] ,
+    #  [0.4444444444444444 , "rgb(254,224,144)"] ,
+    #  [0.5555555555555556 , "rgb(224,243,248)"] ,
+    #  [0.6666666666666666 , "rgb(171,217,233)"] ,
+    #  [0.7777777777777778 , "rgb(116,173,209)"] ,
+    #  [0.8888888888888888 , "rgb(69,117,180)"] ,
+    #  # [1.0 , "rgb(49,54,149)"]]
 
 
     token = 'pk.eyJ1IjoiY2FycGllcm8iLCJhIjoiY2tmdXhxdnl2MWIxaDJ5bXpsb2dteW02dyJ9.Ory0CKJI2j7xMiviRyObJg'
     # fig.update_layout(mapbox_style="mapbox://styles/carpiero/ckg0zxgw42pa119ofckmup850" , mapbox_accesstoken=token)
-    fig.update_layout(coloraxis_colorbar=dict(title='',title_font_size=15,
+    fig.update_layout(coloraxis_colorbar=dict(title='',title_font_size=15,tickfont_size=14,
         thicknessmode="pixels" , thickness=20 ,
-        lenmode="pixels" , len=350 , bgcolor='#f9f9f9',tickformat="n:, €/h",
-                ))
+        lenmode="pixels" , len=350 , bgcolor='#f9f9f9',tickformat="n:,",borderwidth=0,
+                ),coloraxis_reversescale=True)
 
     fig.update_layout(margin={"r": 20 , "t": 40 , "l": 20 , "b": 20})
     if partida_de_coste_types == 'TODOS':

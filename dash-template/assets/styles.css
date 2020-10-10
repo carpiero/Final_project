@@ -5,7 +5,8 @@
 
 body {
   background-color: #f2f2f2;
-  margin: 3%;
+  margin: 5%;
+  margin-top:20px;
 }
 
 .two.columns {
@@ -79,11 +80,11 @@ body {
 }
 
 #header {
-  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
 }
 
 
-##############################################################
 #learn-more-button {
   text-align: center;
   height: 100%;
