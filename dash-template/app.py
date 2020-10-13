@@ -1,13 +1,8 @@
 # Import required libraries
-import pickle
+
 import geopandas
 import json
-import plotly.figure_factory as ff
-import copy
-import pathlib
 import dash
-import math
-import datetime as dt
 import pandas as pd
 from dash.dependencies import Input, Output, State, ClientsideFunction
 import dash_core_components as dcc
@@ -30,8 +25,8 @@ df_final_pob_melt_PC['Descripción'] = df_final_pob_melt_PC['Descripción'].str.
 
 
 # get relative data folder
-PATH = pathlib.Path(__file__).parent
-DATA_PATH = PATH.joinpath("data").resolve()
+# PATH = pathlib.Path(__file__).parent
+# DATA_PATH = PATH.joinpath("data").resolve()
 
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}]
@@ -67,15 +62,15 @@ locale.setlocale(locale.LC_ALL, '')
 
 
 # Load data
-df = pd.read_csv(DATA_PATH.joinpath("wellspublic.csv"), low_memory=False)
-df["Date_Well_Completed"] = pd.to_datetime(df["Date_Well_Completed"])
-df = df[df["Date_Well_Completed"] > dt.datetime(1960, 1, 1)]
-
-trim = df[["API_WellNo", "Well_Type", "Well_Name"]]
-trim.index = trim["API_WellNo"]
-dataset = trim.to_dict(orient="index")
-
-points = pickle.load(open(DATA_PATH.joinpath("points.pkl"), "rb"))
+# df = pd.read_csv(DATA_PATH.joinpath("wellspublic.csv"), low_memory=False)
+# df["Date_Well_Completed"] = pd.to_datetime(df["Date_Well_Completed"])
+# df = df[df["Date_Well_Completed"] > dt.datetime(1960, 1, 1)]
+#
+# trim = df[["API_WellNo", "Well_Type", "Well_Name"]]
+# trim.index = trim["API_WellNo"]
+# dataset = trim.to_dict(orient="index")
+#
+# points = pickle.load(open(DATA_PATH.joinpath("points.pkl"), "rb"))
 
 
 # Create global chart template
@@ -1640,6 +1635,8 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
     token = 'pk.eyJ1IjoiY2FycGllcm8iLCJhIjoiY2tmdXhxdnl2MWIxaDJ5bXpsb2dteW02dyJ9.Ory0CKJI2j7xMiviRyObJg'
     # fig.update_layout(mapbox_style="mapbox://styles/carpiero/ckg0zxgw42pa119ofckmup850" , mapbox_accesstoken=token)
+    # fig.update_layout(mapbox_style="mapbox://styles/carpiero/ckg7tc8yh5w1g19qhuf9d1kpz" , mapbox_accesstoken=token)
+    fig.update_layout(mapbox_style="mapbox://styles/carpiero/ckg7tt9cb5vyo19mkwwg6nmf0" , mapbox_accesstoken=token)
     fig.update_layout(coloraxis_colorbar=dict(title='',title_font_size=15,tickfont_size=14,
         thicknessmode="pixels" , thickness=20 ,
         lenmode="pixels" , len=350 , bgcolor='#f9f9f9',tickformat="n:,",borderwidth=0,
@@ -1657,15 +1654,6 @@ def make_map_figure(CCAA_types, PROV_types,municipio_types,partida_de_coste_type
 
 
     return fig
-
-
-
-
-
-
-
-
-
 
 
 
