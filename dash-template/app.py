@@ -28,9 +28,7 @@ df_final_pob_melt_PC['Descripción'] = df_final_pob_melt_PC['Descripción'].str.
 # PATH = pathlib.Path(__file__).parent
 # DATA_PATH = PATH.joinpath("data").resolve()
 
-app = dash.Dash(
-    __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}]
-)
+app = dash.Dash(__name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}])
 server = app.server
 
 # Create controls
