@@ -1,4 +1,4 @@
-python3==3.7.7
+python3.7
 pandas==1.0.3
 geopandas==0.8.1
 dash==1.13.4
